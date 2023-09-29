@@ -30,6 +30,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
         if barrel.sku == "SMALL_RED_BARREL":
             red_ml = barrel.ml_per_barrel * barrel.quantity
             red_price = barrel.price * barrel.quantity
+            break
 
     if red_ml:
         with db.engine.begin() as connection:
@@ -56,6 +57,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     for barrel in wholesale_catalog:
         if barrel.sku == "SMALL_RED_BARREL":
             red_price = barrel.price
+            break
     
     return [
         {

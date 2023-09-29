@@ -24,6 +24,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     for potion in potions_delivered:
         if potion.potion_type == [100, 0, 0, 0]:
             red_bottles = potion.quantity
+            break
 
     if red_bottles:
         with db.engine.begin() as connection:
