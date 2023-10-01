@@ -54,9 +54,12 @@ def get_bottle_plan():
     with db.engine.begin() as connection:
         red_ml = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory")).scalar()
     num_bottles = red_ml // 100
-    return [
-            {
-                "potion_type": [100, 0, 0, 0],
-                "quantity": num_bottles,
-            }
-        ]
+    if num_bottles > 0:
+        return [
+                {
+                    "potion_type": [100, 0, 0, 0],
+                    "quantity": num_bottles,
+                }
+            ]
+    else:
+        return []
