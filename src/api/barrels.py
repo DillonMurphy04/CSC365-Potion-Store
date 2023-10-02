@@ -32,15 +32,14 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
             red_price += barrel.price # * barrel.quantity ??
             break
 
-    if red_ml > 0:
-        with db.engine.begin() as connection:
-            connection.execute(
-                sqlalchemy.text(
-                    "UPDATE global_inventory "
-                    "SET num_red_ml = num_red_ml + :red_ml, gold = gold - :red_price"
-                )
-                .params(red_ml=red_ml, red_price=red_price)
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                "UPDATE global_inventory "
+                "SET num_red_ml = num_red_ml + :red_ml, gold = gold - :red_price"
             )
+            .params(red_ml=red_ml, red_price=red_price)
+        )
 
     return "OK"
 
@@ -59,7 +58,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             red_price += barrel.price
             break
     
-    if (red_potions.num_red_potions < 10) and (red_price > 0) and (red_potions.gold >= red_price):
+    if (red_potions.num_red_potions < 10 and red_potions.gold >= red_price):
         return [
             {
                 "sku": "SMALL_RED_BARREL",
