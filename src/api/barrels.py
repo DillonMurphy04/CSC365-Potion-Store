@@ -28,8 +28,8 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
     red_price = None
     for barrel in barrels_delivered:
         if barrel.sku == "SMALL_RED_BARREL":
-            red_ml = barrel.ml_per_barrel * barrel.quantity
-            red_price = barrel.price * barrel.quantity
+            red_ml = barrel.ml_per_barrel # * barrel.quantity ??
+            red_price = barrel.price # * barrel.quantity ??
             break
 
     if red_ml:
