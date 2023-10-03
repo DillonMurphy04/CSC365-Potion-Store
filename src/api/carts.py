@@ -19,7 +19,7 @@ class NewCart(BaseModel):
 def create_cart(new_cart: NewCart):
     """ """
     print(new_cart)
-    
+
     return {"cart_id": 1}
 
 
@@ -34,6 +34,8 @@ class CartItem(BaseModel):
     quantity: int
 
 
+cart_items = {}
+
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
@@ -44,9 +46,11 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
         connection.execute(
             sqlalchemy.text(
                 "UPDATE global_inventory "
-                "SET num_red_potions = num_red_potions - 1, gold = gold + 50"
+                "SET num_red_potions = num_red_potions - :bottles, gold = gold + :gold"
             )
+            .params(bottles=cart_item.quantity, gold=cart_item.quantity * 50)
         )
+    cart_items[cart_id] = cart_item.quantity
 
     return "OK"
 
@@ -59,4 +63,4 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"{cart_id}: {cart_checkout}")
 
-    return {"total_potions_bought": 1, "total_gold_paid": 50}
+    return {"total_potions_bought": cart_items[cart_id], "total_gold_paid": cart_items[cart_id] * 50}
