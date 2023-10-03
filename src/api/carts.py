@@ -15,12 +15,19 @@ class NewCart(BaseModel):
     customer: str
 
 
+cart_customers = {}
+
 @router.post("/")
 def create_cart(new_cart: NewCart):
     """ """
     print(new_cart)
+    if new_cart.customer in cart_customers:
+        customer_id = cart_customers[new_cart.customer]
+    else:
+        customer_id = len(cart_customers) + 1
+        cart_customers[new_cart.customer] = customer_id
 
-    return {"cart_id": 1}
+    return {"cart_id": customer_id}
 
 
 @router.get("/{cart_id}")
