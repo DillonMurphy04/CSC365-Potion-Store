@@ -35,6 +35,8 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
+    print(f"{cart_id}: {item_sku}")
+    print(f"{cart_id}: {cart_item}")
 
     return "OK"
 
@@ -45,17 +47,14 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
+    print(f"{cart_id}: {cart_checkout}")
+
     with db.engine.begin() as connection:
-        red_potions = connection.execute(sqlalchemy.text("SELECT num_red_potions FROM global_inventory")).scalar()
-
-        if red_potions > 0:
-            connection.execute(
-                sqlalchemy.text(
-                    "UPDATE global_inventory "
-                    "SET num_red_potions = num_red_potions - 1, gold = gold + 50"
-                )
+        connection.execute(
+            sqlalchemy.text(
+                "UPDATE global_inventory "
+                "SET num_red_potions = num_red_potions - 1, gold = gold + 50"
             )
+        )
 
-            return {"total_potions_bought": 1, "total_gold_paid": 50}
-        else:
-            return {}
+        return {"total_potions_bought": 1, "total_gold_paid": 50}
