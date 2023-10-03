@@ -69,5 +69,6 @@ class CartCheckout(BaseModel):
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"{cart_id}: {cart_checkout}")
+    customer_cart = cart_items.pop(cart_id)
 
-    return {"total_potions_bought": cart_items[cart_id], "total_gold_paid": cart_items[cart_id] * 50}
+    return {"total_potions_bought": customer_cart, "total_gold_paid": customer_cart * 50}
