@@ -38,6 +38,14 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     print(f"{cart_id}: {item_sku}")
     print(f"{cart_id}: {cart_item}")
 
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                "UPDATE global_inventory "
+                "SET num_red_potions = num_red_potions - 1, gold = gold + 50"
+            )
+        )
+
     return "OK"
 
 
@@ -49,12 +57,4 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"{cart_id}: {cart_checkout}")
 
-    with db.engine.begin() as connection:
-        connection.execute(
-            sqlalchemy.text(
-                "UPDATE global_inventory "
-                "SET num_red_potions = num_red_potions - 1, gold = gold + 50"
-            )
-        )
-
-        return {"total_potions_bought": 1, "total_gold_paid": 50}
+    return {"total_potions_bought": 1, "total_gold_paid": 50}
