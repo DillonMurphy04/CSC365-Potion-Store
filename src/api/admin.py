@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
-from src.api.carts import cart_items, cart_customers
+from src.api.carts import cart_items
 
 router = APIRouter(
     prefix="/admin",
@@ -18,8 +18,13 @@ def reset():
     inventory, and all barrels are removed from inventory. Carts are all reset.
     """
     cart_items.clear()
-    cart_customers.clear()
     with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                "DELETE FROM cart_customers"
+            )
+        )
+ 
         connection.execute(
             sqlalchemy.text(
                 "UPDATE global_inventory "
@@ -35,7 +40,6 @@ def reset():
 @router.get("/shop_info/")
 def get_shop_info():
     """ """
-
     # TODO: Change me!
     return {
         "shop_name": "Dillon's Dandy Boutique",

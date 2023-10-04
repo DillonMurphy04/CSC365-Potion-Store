@@ -16,17 +16,27 @@ class NewCart(BaseModel):
     customer: str
 
 
-cart_customers = {}
-
 @router.post("/")
 def create_cart(new_cart: NewCart):
     """ """
     print(new_cart)
-    if new_cart.customer in cart_customers:
-        customer_id = cart_customers[new_cart.customer]
-    else:
-        customer_id = len(cart_customers) + 1
-        cart_customers[new_cart.customer] = customer_id
+
+    with db.engine.begin() as connection:   
+        customer_id = connection.execute(
+            sqlalchemy.text("SELECT id FROM cart_customers WHERE customer = :customer")
+            .params(customer=new_cart.customer)
+        ).scalar()    
+
+        if customer_id:
+            return {"cart_id": customer_id}
+        else:
+            customer_id = connection.execute(
+                sqlalchemy.text(
+                    "INSERT INTO cart_customers (customer) "
+                    "VALUES (:customer) "
+                    "RETURNING id"
+                    ).params(customer=new_cart.customer)
+                    ).scalar()
 
     return {"cart_id": customer_id}
 
