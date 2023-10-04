@@ -70,33 +70,45 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 )
                 ).first()
 
-    potion_info = {
-        "SMALL_RED_BARREL": 0,
-        "SMALL_GREEN_BARREL": 0,
-        "SMALL_BLUE_BARREL": 0,
-    }
-
-    for barrel in wholesale_catalog:
-        if barrel.sku == "SMALL_RED_BARREL":
-            potion_info["SMALL_RED_BARREL"] += barrel.price
-        elif barrel.sku == 'SMALL_GREEN_BARREL':
-            potion_info["SMALL_GREEN_BARREL"] += barrel.price
-        elif barrel.sku == 'SMALL_BLUE_BARREL':
-            potion_info["SMALL_BLUE_BARREL"] += barrel.price
-    
     purchase_plan = []
     gold = potions.gold
 
+    if gold < 100:
+        return purchase_plan
+    
+    if gold < 320:
+        size = "MINI"
+    elif gold < 800:
+        size = "SMALL"
+    else:
+        size = "MEDIUM"
+
+    potion_info = {
+        f"{size}_RED_BARREL": float('inf'),
+        f"{size}_GREEN_BARREL": float('inf'),
+        f"{size}_BLUE_BARREL": float('inf'),
+    }
+
+    for barrel in wholesale_catalog:
+        if barrel.sku == f"{size}_RED_BARREL":
+            potion_info[f"{size}_RED_BARREL"] = barrel.price
+        elif barrel.sku == f"{size}_GREEN_BARREL":
+            potion_info[f"{size}_GREEN_BARREL"] = barrel.price
+        elif barrel.sku == f"{size}_BLUE_BARREL":
+            potion_info[f"{size}_BLUE_BARREL"] = barrel.price
+
     potions_sorted = [
-        (potions.num_red_potions, "SMALL_RED_BARREL"),
-        (potions.num_blue_potions, "SMALL_BLUE_BARREL"),
-        (potions.num_green_potions, "SMALL_GREEN_BARREL"),
+        (potions.num_red_potions, f"{size}_RED_BARREL"),
+        (potions.num_blue_potions, f"{size}_BLUE_BARREL"),
+        (potions.num_green_potions, f"{size}_GREEN_BARREL"),
     ]
 
     potions_sorted.sort()
 
     for quantity, name in potions_sorted:
         price = potion_info[name]
+        if gold < 100:
+            return purchase_plan
         if quantity < 10 and gold >= price:
             purchase_plan.append({"sku": name, "quantity": 1})
             gold -= price
