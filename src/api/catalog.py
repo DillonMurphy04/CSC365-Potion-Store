@@ -17,7 +17,7 @@ def get_catalog():
         # Can return a max of 20 items.
         catalog.append(
             {
-                "sku": "RED_POTION_0",
+                "sku": "red_potions",
                 "name": "red potion",
                 "quantity": potions.num_red_potions,
                 "price": 50,
@@ -27,7 +27,7 @@ def get_catalog():
     if potions.num_green_potions > 0:
         catalog.append(
             {
-                "sku": "GREEN_POTION_0",
+                "sku": "green_potions",
                 "name": "green potion",
                 "quantity": potions.num_green_potions,
                 "price": 50,
@@ -37,7 +37,7 @@ def get_catalog():
     if potions.num_green_potions > 0:
         catalog.append(
             {
-                "sku": "BLUE_POTION_0",
+                "sku": "blue_potions",
                 "name": "blue potion",
                 "quantity": potions.num_blue_potions,
                 "price": 60,
