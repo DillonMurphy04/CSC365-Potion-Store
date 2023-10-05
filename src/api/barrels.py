@@ -31,14 +31,15 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
     blue_ml = 0
     blue_price = 0
     for barrel in barrels_delivered:
-        if barrel.sku == "SMALL_RED_BARREL":
+        parts = barrel.sku.split('_')
+        color = parts[1]
+        if color == "RED":
             red_ml += barrel.ml_per_barrel
             red_price += barrel.price
-            break
-        if barrel.sku == 'SMALL_GREEN_BARREL':
+        if color == 'GREEN':
             green_ml += barrel.ml_per_barrel
             green_price += barrel.price
-        if barrel.sku == 'SMALL_BLUE_BARREL':
+        if color == 'BLUE':
             blue_ml += barrel.ml_per_barrel
             blue_price += barrel.price
 
