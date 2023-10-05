@@ -80,9 +80,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
         for item_sku, quantity in customer_cart.items():  
             if item_sku == "blue_potions":
-                cost = 60
+                cost = 90
             else:
-                cost = 50          
+                cost = 75
             connection.execute(
                 sqlalchemy.text(
                     "UPDATE global_inventory "
