@@ -34,14 +34,14 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
         parts = barrel.sku.split('_')
         color = parts[1]
         if color == "RED":
-            red_ml += barrel.ml_per_barrel
-            red_price += barrel.price
+            red_ml += barrel.ml_per_barrel * barrel.quantity
+            red_price += barrel.price * barrel.quantity
         if color == 'GREEN':
-            green_ml += barrel.ml_per_barrel
-            green_price += barrel.price
+            green_ml += barrel.ml_per_barrel * barrel.quantity
+            green_price += barrel.price * barrel.quantity
         if color == 'BLUE':
-            blue_ml += barrel.ml_per_barrel
-            blue_price += barrel.price
+            blue_ml += barrel.ml_per_barrel * barrel.quantity
+            blue_price += barrel.price * barrel.quantity
 
     with db.engine.begin() as connection:
         connection.execute(
@@ -78,10 +78,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         return purchase_plan
     
     if gold < 320:
+        purch_quant = 1
         size = "MINI"
     elif gold < 800:
+        purch_quant = 1
         size = "SMALL"
     else:
+        purch_quant = gold // 800
         size = "MEDIUM"
 
     potion_info = {
@@ -110,8 +113,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         price = potion_info[name]
         if gold < 60:
             return purchase_plan
-        if quantity < 10 and gold >= price:
-            purchase_plan.append({"sku": name, "quantity": 1})
+        if quantity < 10 * purch_quant and gold >= price:
+            purchase_plan.append({"sku": name, "quantity": purch_quant})
             gold -= price
     
     return purchase_plan
