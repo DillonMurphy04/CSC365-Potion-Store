@@ -123,6 +123,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 gold -= price
 
             if len(used_colors) == 3:
-                return purchase_plan
+                if gold > 800:
+                    used_colors = set()
+                else:
+                    return purchase_plan
     
     return purchase_plan
