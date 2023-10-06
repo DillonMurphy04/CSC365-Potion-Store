@@ -95,7 +95,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         parts = barrel.sku.split('_')
         color = parts[1]
         size = parts[0]
-        potion_info[size][color] = barrel.price
+        potion_info[size][color] = (barrel.price, barrel.quantity)
 
     colors_sorted = [
         (potions.num_red_potions, "RED"),
@@ -113,12 +113,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         for quantity, color in colors_sorted:
             if color not in potion_info[size] or color in used_colors:
                 continue
-            price = potion_info[size][color]
+            price, barrel_quantity = potion_info[size][color]
             if gold < 60:
                 return purchase_plan
+            purchase_quantity = min(purch_quant, barrel_quantity)
             if quantity < 10 * purch_quant and gold >= price:
                 used_colors.add(color)
-                purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": purch_quant})
+                purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": purchase_quantity})
                 gold -= price
 
             if len(used_colors) == 3:
