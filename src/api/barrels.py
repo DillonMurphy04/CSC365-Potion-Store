@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
+from collections import defaultdict
 
 router = APIRouter(
     prefix="/barrels",
@@ -77,44 +78,44 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     if gold < 60:
         return purchase_plan
     
-    if gold < 320:
-        purch_quant = 1
-        size = "MINI"
-    elif gold < 800:
-        purch_quant = 1
-        size = "SMALL"
-    else:
+    desired_size = []
+    if gold > 800:
         purch_quant = gold // 800
-        size = "MEDIUM"
+        desired_size.extend(["MEDIUM", "SMALL", "MINI"])
+    elif gold > 320:
+        purch_quant = 1
+        desired_size.extend(["SMALL", "MINI"])
+    else:
+        purch_quant = 1
+        desired_size.append("MINI")
 
-    potion_info = {
-        f"{size}_RED_BARREL": float('inf'),
-        f"{size}_GREEN_BARREL": float('inf'),
-        f"{size}_BLUE_BARREL": float('inf'),
-    }
+    potion_info = defaultdict(dict)
 
     for barrel in wholesale_catalog:
-        if barrel.sku == f"{size}_RED_BARREL":
-            potion_info[f"{size}_RED_BARREL"] = barrel.price
-        elif barrel.sku == f"{size}_GREEN_BARREL":
-            potion_info[f"{size}_GREEN_BARREL"] = barrel.price
-        elif barrel.sku == f"{size}_BLUE_BARREL":
-            potion_info[f"{size}_BLUE_BARREL"] = barrel.price
+        parts = barrel.sku.split('_')
+        color = parts[1]
+        size = parts[0]
+        potion_info[size][color] = barrel.price
 
-    potions_sorted = [
-        (potions.num_red_potions, f"{size}_RED_BARREL"),
-        (potions.num_blue_potions, f"{size}_BLUE_BARREL"),
-        (potions.num_green_potions, f"{size}_GREEN_BARREL"),
+    colors_sorted = [
+        (potions.num_red_potions, color),
+        (potions.num_blue_potions, color),
+        (potions.num_green_potions, color),
     ]
 
-    potions_sorted.sort()
+    colors_sorted.sort()
 
-    for quantity, name in potions_sorted:
-        price = potion_info[name]
-        if gold < 60:
-            return purchase_plan
-        if quantity < 10 * purch_quant and gold >= price:
-            purchase_plan.append({"sku": name, "quantity": purch_quant})
-            gold -= price
+    for size in desired_size:
+        if size not in potion_info:
+            continue
+        for quantity, color in colors_sorted:
+            price = potion_info[size][color]
+            if gold < 60:
+                return purchase_plan
+            if quantity < 10 * purch_quant and gold >= price:
+                purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": purch_quant})
+                gold -= price
+
+        return purchase_plan
     
     return purchase_plan
