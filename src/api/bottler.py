@@ -75,6 +75,10 @@ def get_bottle_plan():
     num_green_bottles = ml.num_green_ml // 100
     num_blue_bottles = ml.num_blue_ml // 100
 
+    num_red_bottles = min(num_red_bottles, 100)
+    num_green_bottles = min(num_green_bottles, 100)
+    num_blue_bottles = min(num_blue_bottles, 100)
+
     bottle_plan = []
 
     if num_red_bottles > 0:
