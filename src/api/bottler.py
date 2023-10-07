@@ -67,7 +67,7 @@ def get_bottle_plan():
     with db.engine.begin() as connection:
         ml = connection.execute(
             sqlalchemy.text(
-                "SELECT num_red_ml, num_green_ml, num_blue_ml FROM global_inventory"
+                "SELECT * FROM global_inventory"
                 )
                 ).first()
         
@@ -75,9 +75,9 @@ def get_bottle_plan():
     num_green_bottles = ml.num_green_ml // 100
     num_blue_bottles = ml.num_blue_ml // 100
 
-    num_red_bottles = min(num_red_bottles, 100)
-    num_green_bottles = min(num_green_bottles, 100)
-    num_blue_bottles = min(num_blue_bottles, 100)
+    num_red_bottles = min(num_red_bottles, 100 - ml.num_red_potions)
+    num_green_bottles = min(num_green_bottles, 100 - ml.num_green_potions)
+    num_blue_bottles = min(num_blue_bottles, 100 - ml.num_blue_potions)
 
     bottle_plan = []
 

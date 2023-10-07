@@ -67,7 +67,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     with db.engine.begin() as connection:
         potions = connection.execute(
             sqlalchemy.text(
-                "SELECT num_red_potions, num_green_potions, num_blue_potions, gold "
+                "SELECT * "
                 "FROM global_inventory"
                 )
                 ).first()
@@ -97,11 +97,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         size = parts[0]
         potion_info[size][color] = (barrel.price, barrel.quantity)
 
-    colors_sorted = [
-        (potions.num_red_potions, "RED"),
-        (potions.num_blue_potions, "BLUE"),
-        (potions.num_green_potions, "GREEN"),
-    ]
+    colors_sorted = []
+
+    if potions.num_red_ml < 20000:
+        colors_sorted.append((potions.num_red_potions, "RED"))
+
+    if potions.num_blue_ml < 20000:
+        colors_sorted.append((potions.num_blue_potions, "BLUE"))
+
+    if potions.num_green_ml < 20000:
+        colors_sorted.append((potions.num_green_potions, "GREEN"))
 
     colors_sorted.sort()
 
