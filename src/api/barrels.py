@@ -71,6 +71,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 "FROM global_inventory"
                 )
                 ).first()
+        
+        rgb_count = connection.execute(sqlalchemy.text(
+                "SELECT "
+                "SUM(red_amount * num_potion) AS total_red, "
+                "SUM(green_amount * num_potion) AS total_green, "
+                "SUM(blue_amount * num_potion) AS total_blue "
+                "FROM potions"
+            )).first()
 
     purchase_plan = []
     gold = potions.gold
@@ -102,14 +110,17 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     colors_sorted = []
 
-    if potions.num_red_ml < 20000:
-        colors_sorted.append((potions.num_red_potions, "RED"))
+    num_red_potions = rgb_count.total_red // 100
+    num_green_potions = rgb_count.total_green // 100
+    num_blue_potions = rgb_count.total_blue // 100
 
-    if potions.num_blue_ml < 20000:
-        colors_sorted.append((potions.num_blue_potions, "BLUE"))
-
-    if potions.num_green_ml < 20000:
-        colors_sorted.append((potions.num_green_potions, "GREEN"))
+    colors_sorted = []
+    if num_red_potions < 200:
+        colors_sorted.append((num_red_potions, "RED"))
+    if num_green_potions < 200:
+        colors_sorted.append((num_green_potions, "GREEN"))
+    if num_blue_potions < 200:
+        colors_sorted.append((num_blue_potions, "BLUE"))
 
     colors_sorted.sort()
 

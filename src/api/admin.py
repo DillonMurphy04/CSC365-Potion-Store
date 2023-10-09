@@ -27,10 +27,8 @@ def reset():
  
         connection.execute(
             sqlalchemy.text(
-                "UPDATE global_inventory "
-                "SET num_red_potions = 0, num_red_ml = 0, "
-                "num_blue_potions = 0, num_blue_ml = 0, "
-                "num_green_potions = 0, num_green_ml = 0, gold = 100"
+                "UPDATE potions "
+                "SET num_potions = 0"
             )
         )
 
@@ -40,6 +38,7 @@ def reset():
 @router.get("/shop_info/")
 def get_shop_info():
     """ """
+    
     # TODO: Change me!
     return {
         "shop_name": "Dillon's Dandy Boutique",
