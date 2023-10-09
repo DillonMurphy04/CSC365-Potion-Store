@@ -79,8 +79,11 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         return purchase_plan
     
     desired_size = []
-    if gold > 800:
-        purch_quant = gold // 800
+    if gold > 1500:
+        purch_quant = gold // 1500
+        desired_size.extend(["LARGE", "MEDIUM", "SMALL", "MINI"])
+    elif gold > 800:
+        purch_quant = 1
         desired_size.extend(["MEDIUM", "SMALL", "MINI"])
     elif gold > 320:
         purch_quant = 1
