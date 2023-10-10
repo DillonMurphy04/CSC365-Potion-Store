@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
+import math
 
 router = APIRouter(
     prefix="/bottler",
@@ -20,32 +21,43 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     """ """
     print(potions_delivered)
 
-    red_bottles = 0
-    green_bottles = 0
-    blue_bottles = 0
-    for potion in potions_delivered:
-        if potion.potion_type == [100, 0, 0, 0]:
-            red_bottles = potion.quantity
-        if potion.potion_type == [0, 100, 0, 0]:
-            green_bottles = potion.quantity
-        if potion.potion_type == [0, 0, 100, 0]:
-            blue_bottles = potion.quantity
-
+    red = 0
+    green = 0
+    blue = 0
     with db.engine.begin() as connection:
+        for potion in potions_delivered:
+            red += potion.potion_type[0] * potion.quantity
+            green += potion.potion_type[1] * potion.quantity
+            blue += potion.potion_type[2] * potion.quantity
+            connection.execute(
+                sqlalchemy.text(
+                    "UPDATE potions "
+                    "SET num_potions = num_potions + :quantity "
+                    "WHERE red_amount = :red_amount AND "
+                    "green_amount = :green_amount AND "
+                    "blue_amount = :blue_amount AND "
+                    "dark_amount = :dark_amount"
+                )
+                .params(
+                    quantity=potion.quantity,
+                    red_amount=potion.potion_type[0],
+                    green_amount=potion.potion_type[1],
+                    blue_amount=potion.potion_type[2],
+                    dark_amount=potion.potion_type[3]
+                )
+            )
+
         connection.execute(
             sqlalchemy.text(
                 "UPDATE global_inventory "
-                "SET num_red_potions = num_red_potions + :red_bottles, num_red_ml = num_red_ml - :red_ml, "
-                "num_green_potions = num_green_potions + :green_bottles, num_green_ml = num_green_ml - :green_ml, "
-                "num_blue_potions = num_blue_potions + :blue_bottles, num_blue_ml = num_blue_ml - :blue_ml"
+                "SET num_red_ml = num_red_ml - :red_ml, "
+                "num_green_ml = num_green_ml - :green_ml, "
+                "num_blue_ml = num_blue_ml - :blue_ml"
             )
             .params(
-                red_bottles=red_bottles,
-                red_ml=red_bottles * 100,
-                green_bottles=green_bottles,
-                green_ml=green_bottles * 100,
-                blue_bottles=blue_bottles,
-                blue_ml=blue_bottles * 100
+                red_ml=red,
+                green_ml=green,
+                blue_ml=blue
             )
         )
 
@@ -71,21 +83,33 @@ def get_bottle_plan():
                 )
                 ).first()
         
-    num_red_bottles = ml.num_red_ml // 100
-    num_green_bottles = ml.num_green_ml // 100
-    num_blue_bottles = ml.num_blue_ml // 100
-
-    num_red_bottles = min(num_red_bottles, 100 - ml.num_red_potions)
-    num_green_bottles = min(num_green_bottles, 100 - ml.num_green_potions)
-    num_blue_bottles = min(num_blue_bottles, 100 - ml.num_blue_potions)
+        potions = connection.execute(
+            sqlalchemy.text(
+                "SELECT * FROM potions ORDER BY potions.num_potion DESC"
+                )
+                )
 
     bottle_plan = []
 
-    if num_red_bottles > 0:
-        bottle_plan.append({"potion_type": [100, 0, 0, 0], "quantity": num_red_bottles})
-    if num_green_bottles > 0:
-        bottle_plan.append({"potion_type": [0, 100, 0, 0], "quantity": num_green_bottles})
-    if num_blue_bottles > 0:
-        bottle_plan.append({"potion_type": [0, 0, 100, 0], "quantity": num_blue_bottles})
+    red = ml.num_red_ml
+    green = ml.num_green_ml
+    blue = ml.num_blue_ml
+    avg_potion = math.ceil((red + green + blue) / 100 / 5)
+    
+    for row in potions:
+        possible = min(
+            float('inf') if row.red_amount == 0 else ml.num_red_ml // row.red_amount,
+            float('inf') if row.green_amount == 0 else ml.num_green_ml // row.green_amount,
+            float('inf') if row.blue_amount == 0 else ml.num_blue_ml // row.blue_amount
+        )
+        num_potion = min(possible, 42 - row.num_potion, avg_potion)
+        if num_potion > 0:
+            red -= row.red_amount * num_potion
+            green -= row.green_amount * num_potion
+            blue -= row.blue_amount * num_potion
+            bottle_plan.append({
+                "potion_type": [row.red_amount, row.green_amount, row.blue_amount, row.dark_amount],
+                "quantity": num_potion
+            })
 
     return bottle_plan
