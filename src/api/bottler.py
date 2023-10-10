@@ -32,7 +32,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
             connection.execute(
                 sqlalchemy.text(
                     "UPDATE potions "
-                    "SET num_potions = potions.num_potion + :quantity "
+                    "SET num_potion = num_potion + :quantity "
                     "WHERE red_amount = :red_amount AND "
                     "green_amount = :green_amount AND "
                     "blue_amount = :blue_amount AND "
@@ -82,10 +82,10 @@ def get_bottle_plan():
                 "SELECT * FROM global_inventory"
                 )
                 ).first()
-        
+
         potions = connection.execute(
             sqlalchemy.text(
-                "SELECT * FROM potions ORDER BY potions.num_potion DESC"
+                "SELECT * FROM potions ORDER BY num_potion DESC"
                 )
                 )
 
@@ -95,7 +95,7 @@ def get_bottle_plan():
     green = ml.num_green_ml
     blue = ml.num_blue_ml
     avg_potion = math.ceil((red + green + blue) / 100 / 5)
-    
+
     for row in potions:
         possible = min(
             float('inf') if row.red_amount == 0 else ml.num_red_ml // row.red_amount,

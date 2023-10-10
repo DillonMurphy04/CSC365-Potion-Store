@@ -24,11 +24,21 @@ def reset():
                 "DELETE FROM cart_customers"
             )
         )
- 
+
+        connection.execute(
+            sqlalchemy.text(
+                "UPDATE global_inventory "
+                "SET gold = 100, "
+                "num_red_ml = 0, "
+                "num_green_ml = 0, "
+                "num_blue_ml = 0"
+            )
+        )
+
         connection.execute(
             sqlalchemy.text(
                 "UPDATE potions "
-                "SET num_potions = 0"
+                "SET num_potion = 0"
             )
         )
 
