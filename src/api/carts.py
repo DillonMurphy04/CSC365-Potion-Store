@@ -3,7 +3,6 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
-from collections import defaultdict
 
 router = APIRouter(
     prefix="/carts",
@@ -52,15 +51,24 @@ class CartItem(BaseModel):
     quantity: int
 
 
-cart_items = defaultdict(dict)
-
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
     print(f"{cart_id}: {item_sku}")
     print(f"{cart_id}: {cart_item}")
 
-    cart_items[cart_id][item_sku] = cart_item.quantity
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO cart_items (id, item_sku, quantity)
+                VALUES (:cart_id, :item_sku, :quantity)
+                ON CONFLICT (id, item_sku)
+                DO UPDATE SET
+                quantity = cart_items.quantity + EXCLUDED.quantity
+                """
+            ).params(cart_id=cart_id, item_sku=item_sku, quantity=cart_item.quantity)
+        )
 
     return "OK"
 
@@ -72,13 +80,24 @@ class CartCheckout(BaseModel):
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"{cart_id}: {cart_checkout}")
-    customer_cart = cart_items.pop(cart_id)
 
     total_potions_bought = 0
     total_gold_paid = 0
 
     with db.engine.begin() as connection:
-        for item_sku, quantity in customer_cart.items():
+        customer_cart = connection.execute(
+            sqlalchemy.text(
+                "SELECT item_sku, quantity FROM cart_items WHERE id = :cart_id"
+            ).params(cart_id=cart_id)
+            )
+        
+        connection.execute(
+            sqlalchemy.text(
+                "DELETE FROM cart_items WHERE id = :cart_id"
+            ).params(cart_id=cart_id)
+        )
+
+        for item_sku, quantity in customer_cart:
             cost = connection.execute(
                 sqlalchemy.text(
                     "UPDATE potions "

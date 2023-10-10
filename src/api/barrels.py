@@ -122,7 +122,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     if num_blue_potions < 200:
         colors_sorted.append((num_blue_potions, "BLUE"))
 
-    colors_sorted.sort()
+    color_weights = {"RED": 3, "GREEN": 2, "BLUE": 1}
+    colors_sorted.sort(key=lambda x: (x[0], -color_weights[x[1]]))
+    # colors_sorted.sort()
 
     used_colors = set()
 
