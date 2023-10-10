@@ -73,7 +73,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"{cart_id}: {cart_checkout}")
     customer_cart = cart_items.pop(cart_id)
-    
+
     total_potions_bought = 0
     total_gold_paid = 0
 

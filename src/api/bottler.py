@@ -32,7 +32,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
             connection.execute(
                 sqlalchemy.text(
                     "UPDATE potions "
-                    "SET num_potions = num_potions + :quantity "
+                    "SET num_potions = potions.num_potion + :quantity "
                     "WHERE red_amount = :red_amount AND "
                     "green_amount = :green_amount AND "
                     "blue_amount = :blue_amount AND "
