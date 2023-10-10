@@ -78,19 +78,23 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     total_gold_paid = 0
 
     with db.engine.begin() as connection:
-        for item_sku, quantity in customer_cart.items():  
-            if item_sku == "blue_potions":
-                cost = 70
-            else:
-                cost = 60
-            connection.execute(
+        for item_sku, quantity in customer_cart.items():
+            cost = connection.execute(
                 sqlalchemy.text(
-                    "UPDATE global_inventory "
-                    f"SET num_{item_sku} = num_{item_sku} - :quantity, gold = gold + :gold"
-                )
-                .params(quantity=quantity, gold=quantity * cost)
-            )
+                        "UPDATE potions "
+                        f"SET num_potions = num_potions - {quantity}"
+                        f"WHERE item_sku = {item_sku} "
+                        "RETURNING cost"
+                    )
+                ).scalar()
             total_potions_bought += quantity
-            total_gold_paid += quantity * cost
+            total_gold_paid += cost * quantity
+
+        connection.execute(
+            sqlalchemy.text(
+                "UPDATE global_inventory "
+                f"SET gold = gold - {total_gold_paid}"
+            )
+        )
 
     return {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid}
