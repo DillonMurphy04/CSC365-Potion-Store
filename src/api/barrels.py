@@ -1,3 +1,4 @@
+import math
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
@@ -113,14 +114,18 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     num_red_potions = rgb_count.total_red / 100
     num_green_potions = rgb_count.total_green / 100
     num_blue_potions = rgb_count.total_blue / 100
+    total = num_red_potions + num_green_potions + num_blue_potions
 
     colors_sorted = []
     if num_red_potions < 200:
-        colors_sorted.append((num_red_potions, "RED"))
+        if num_red_potions <= math.ceil((total + 1) / 2):
+            colors_sorted.append((num_red_potions, "RED"))
     if num_green_potions < 200:
-        colors_sorted.append((num_green_potions, "GREEN"))
+        if num_green_potions <= math.ceil((total + 1) / 2):
+            colors_sorted.append((num_green_potions, "GREEN"))
     if num_blue_potions < 200:
-        colors_sorted.append((num_blue_potions, "BLUE"))
+        if num_blue_potions <= math.ceil((total + 1) / 2):
+            colors_sorted.append((num_blue_potions, "BLUE"))
 
     color_weights = {"RED": 3, "GREEN": 2, "BLUE": 1}
     colors_sorted.sort(key=lambda x: (x[0], -color_weights[x[1]]))
@@ -146,7 +151,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": purchase_quantity})
                 gold -= price * purchase_quantity
 
-            if len(used_colors) == 3:
+            if len(used_colors) == len(colors_sorted):
                 if gold > money_spent:
                     money_spent = 0
                     used_colors = set()

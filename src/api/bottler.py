@@ -88,17 +88,27 @@ def get_bottle_plan():
                 "SELECT * FROM potions ORDER BY num_potion ASC"
                 )
                 )
+        
+        sum_potions = connection.execute(
+            sqlalchemy.text(
+                "SELECT SUM(num_potion) FROM potions"
+                )
+                ).scalar()
 
     bottle_plan = []
 
     red = ml.num_red_ml
     green = ml.num_green_ml
     blue = ml.num_blue_ml
-    avg_potion = math.ceil((red + green + blue) / 100 / 5)
+    avg_potion = math.ceil((red + green + blue) / 100 / 4)
 
     for row in potions:
         if red + green + blue < 100:
             return bottle_plan
+
+        if row.num_potion > math.ceil(sum_potions + 1 / 4):
+            continue
+
         possible = min(
             float('inf') if row.red_amount == 0 else red // row.red_amount,
             float('inf') if row.green_amount == 0 else green // row.green_amount,
