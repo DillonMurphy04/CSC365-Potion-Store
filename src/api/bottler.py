@@ -85,7 +85,7 @@ def get_bottle_plan():
 
         potions = connection.execute(
             sqlalchemy.text(
-                "SELECT * FROM potions ORDER BY num_potion DESC"
+                "SELECT * FROM potions ORDER BY num_potion ASC"
                 )
                 )
 
