@@ -97,10 +97,12 @@ def get_bottle_plan():
     avg_potion = math.ceil((red + green + blue) / 100 / 5)
 
     for row in potions:
+        if red + green + blue < 100:
+            return bottle_plan
         possible = min(
-            float('inf') if row.red_amount == 0 else ml.num_red_ml // row.red_amount,
-            float('inf') if row.green_amount == 0 else ml.num_green_ml // row.green_amount,
-            float('inf') if row.blue_amount == 0 else ml.num_blue_ml // row.blue_amount
+            float('inf') if row.red_amount == 0 else red // row.red_amount,
+            float('inf') if row.green_amount == 0 else green // row.green_amount,
+            float('inf') if row.blue_amount == 0 else blue // row.blue_amount
         )
         num_potion = min(possible, 42 - row.num_potion, avg_potion)
         if num_potion > 0:
