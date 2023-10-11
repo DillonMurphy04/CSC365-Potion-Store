@@ -114,17 +114,20 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     num_red_potions = rgb_count.total_red / 100
     num_green_potions = rgb_count.total_green / 100
     num_blue_potions = rgb_count.total_blue / 100
-    total = num_red_potions + num_green_potions + num_blue_potions
+    ml_red = potions.num_red_ml / 100
+    ml_green = potions.num_green_ml / 100
+    ml_blue = potions.num_blue_ml / 100
+    threshold = math.ceil((ml_red + ml_green + ml_blue) / 2) + 1
 
     colors_sorted = []
     if num_red_potions < 200:
-        if num_red_potions <= math.ceil((total + 1) / 2):
+        if ml_red <= threshold:
             colors_sorted.append((num_red_potions, "RED"))
     if num_green_potions < 200:
-        if num_green_potions <= math.ceil((total + 1) / 2):
+        if ml_green <= threshold:
             colors_sorted.append((num_green_potions, "GREEN"))
     if num_blue_potions < 200:
-        if num_blue_potions <= math.ceil((total + 1) / 2):
+        if ml_blue <= threshold:
             colors_sorted.append((num_blue_potions, "BLUE"))
 
     color_weights = {"RED": 3, "GREEN": 2, "BLUE": 1}
