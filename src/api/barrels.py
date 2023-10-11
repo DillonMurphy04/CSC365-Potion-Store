@@ -110,9 +110,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     colors_sorted = []
 
-    num_red_potions = rgb_count.total_red // 100
-    num_green_potions = rgb_count.total_green // 100
-    num_blue_potions = rgb_count.total_blue // 100
+    num_red_potions = rgb_count.total_red / 100
+    num_green_potions = rgb_count.total_green / 100
+    num_blue_potions = rgb_count.total_blue / 100
 
     colors_sorted = []
     if num_red_potions < 200:
