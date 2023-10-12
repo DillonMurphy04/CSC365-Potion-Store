@@ -21,14 +21,14 @@ create table
     num_green_ml integer not null default 0
   ) tablespace pg_default;
 
-  create table
+create table
   public.potions (
     item_sku text not null,
-    red_amount bigint not null default '0'::bigint,
-    blue_amount bigint not null default '0'::bigint,
-    green_amount bigint not null default '0'::bigint,
-    dark_amount bigint not null default '0'::bigint,
-    cost bigint not null default '0'::bigint,
-    num_potion bigint not null default '0'::bigint,
+    red_amount integer not null default 0,
+    blue_amount integer not null default 0,
+    green_amount integer not null default 0,
+    dark_amount integer not null default 0,
+    cost integer not null default 0,
+    num_potion integer not null default 0,
     constraint potions_pkey primary key (item_sku)
   ) tablespace pg_default;
