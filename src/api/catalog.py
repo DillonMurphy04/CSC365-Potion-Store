@@ -11,7 +11,7 @@ def get_catalog():
     """
     with db.engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT * FROM potions")
+            sqlalchemy.text("SELECT * FROM potions ORDER BY num_potion DESC LIMIT 6")
         )
 
     catalog = []
