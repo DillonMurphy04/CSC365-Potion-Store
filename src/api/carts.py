@@ -81,39 +81,26 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
     print(f"{cart_id}: {cart_checkout}")
 
-    total_potions_bought = 0
-    total_gold_paid = 0
-
     with db.engine.begin() as connection:
         customer_cart = connection.execute(
             sqlalchemy.text(
-                "SELECT item_sku, quantity FROM cart_items WHERE id = :cart_id"
-            ).params(cart_id=cart_id)
-            )
-        
-        connection.execute(
-            sqlalchemy.text(
-                "DELETE FROM cart_items WHERE id = :cart_id"
-            ).params(cart_id=cart_id)
-        )
-
-        for item_sku, quantity in customer_cart:
-            cost = connection.execute(
-                sqlalchemy.text(
-                    "UPDATE potions "
-                    "SET num_potion = num_potion - :quantity "
-                    "WHERE item_sku = :item_sku "
-                    "RETURNING cost"
+                """
+                WITH updated_potions AS (
+                    UPDATE potions
+                    SET num_potion = num_potion - cart_items.quantity
+                    FROM cart_items
+                    WHERE cart_items.item_sku = potions.item_sku AND cart_items.id = :cart_id
+                    RETURNING cart_items.quantity, potions.cost
                 )
-                .params(quantity=quantity, item_sku=item_sku)
-            ).scalar()
-            total_potions_bought += quantity
-            total_gold_paid += cost * quantity
+                SELECT SUM(quantity) AS total_potions_bought, SUM(quantity * cost) AS total_gold_paid
+                FROM updated_potions
+                """
+            ).params(cart_id=cart_id)).first()
 
         connection.execute(
             sqlalchemy.text(
                 "UPDATE global_inventory SET gold = gold + :total_gold_paid"
-            ).params(total_gold_paid=total_gold_paid)
+            ).params(total_gold_paid=customer_cart.total_gold_paid)
         )
 
-    return {"total_potions_bought": total_potions_bought, "total_gold_paid": total_gold_paid}
+    return {"total_potions_bought": customer_cart.total_potions_bought, "total_gold_paid": customer_cart.total_gold_paid}
