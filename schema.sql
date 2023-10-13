@@ -32,5 +32,6 @@ create table
     dark_amount integer not null default 0,
     cost integer not null default 0,
     num_potion integer not null default 0,
+    potions_sold integer not null default 0,
     constraint potions_pkey primary key (item_sku)
   ) tablespace pg_default;

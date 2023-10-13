@@ -87,7 +87,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 """
                 WITH updated_potions AS (
                     UPDATE potions
-                    SET num_potion = num_potion - cart_items.quantity
+                    SET
+                        num_potion = num_potion - cart_items.quantity,
+                        potions_sold = potions_sold + cart_items.quantity
                     FROM cart_items
                     WHERE cart_items.item_sku = potions.item_sku AND cart_items.id = :cart_id
                     RETURNING cart_items.quantity, potions.cost
