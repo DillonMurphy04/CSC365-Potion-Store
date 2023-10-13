@@ -96,6 +96,12 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 FROM updated_potions
                 """
             ).params(cart_id=cart_id)).first()
+        
+        connection.execute(
+            sqlalchemy.text(
+                "DELETE FROM cart_items WHERE id = :cart_id"
+            ).params(cart_id=cart_id)
+        )
 
         connection.execute(
             sqlalchemy.text(
