@@ -82,33 +82,51 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     print(f"{cart_id}: {cart_checkout}")
 
     with db.engine.begin() as connection:
+        transaction_id = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO transactions (description, type)
+                VALUES (:description, :type)
+                RETURNING id
+                """
+            ).params(description=f"Checkout for cart {cart_id}", type="Checkout")
+        ).first().id
+
         customer_cart = connection.execute(
             sqlalchemy.text(
                 """
-                WITH updated_potions AS (
-                    UPDATE potions
-                    SET
-                        num_potion = num_potion - cart_items.quantity,
-                        potions_sold = potions_sold + cart_items.quantity
+                WITH cart_details AS (
+                    SELECT
+                        id AS customer_id,
+                        item_sku,
+                        quantity
                     FROM cart_items
-                    WHERE cart_items.item_sku = potions.item_sku AND cart_items.id = :cart_id
-                    RETURNING cart_items.quantity, potions.cost
+                    WHERE cart_items.id = :cart_id
+                ),
+                ledger_insert AS (
+                    INSERT INTO customer_ledger_entries (customer_id, transaction_id, item_sku, change_potions, change_gold)
+                    SELECT
+                        customer_id,
+                        :transaction_id,
+                        cart_details.item_sku,
+                        -quantity,
+                        (quantity * potions.cost)
+                    FROM cart_details
+                    JOIN potions ON cart_details.item_sku = potions.item_sku
+                    RETURNING item_sku, change_potions, change_gold
                 )
-                SELECT SUM(quantity) AS total_potions_bought, SUM(quantity * cost) AS total_gold_paid
-                FROM updated_potions
+                SELECT
+                    SUM(change_potions) AS total_potions_bought,
+                    SUM(change_gold) AS total_gold_paid
+                FROM ledger_insert
                 """
-            ).params(cart_id=cart_id)).first()
-        
+            ).params(cart_id=cart_id, transaction_id=transaction_id)
+        ).first()
+
         connection.execute(
             sqlalchemy.text(
                 "DELETE FROM cart_items WHERE id = :cart_id"
             ).params(cart_id=cart_id)
         )
 
-        connection.execute(
-            sqlalchemy.text(
-                "UPDATE global_inventory SET gold = gold + :total_gold_paid"
-            ).params(total_gold_paid=customer_cart.total_gold_paid)
-        )
-
-    return {"total_potions_bought": customer_cart.total_potions_bought, "total_gold_paid": customer_cart.total_gold_paid}
+    return {"total_potions_bought": -customer_cart.total_potions_bought, "total_gold_paid": customer_cart.total_gold_paid}

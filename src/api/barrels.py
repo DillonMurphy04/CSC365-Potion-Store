@@ -46,15 +46,28 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
             blue_price += barrel.price * barrel.quantity
 
     with db.engine.begin() as connection:
+        transaction_id = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO transactions (description, type)
+                VALUES (:description, :type)
+                RETURNING id
+                """
+            ).params(description=f"Buying Red: {red_ml} ml, Green: {green_ml} ml, Blue: {blue_ml} ml", type="Barreler")
+        ).first().id
+
         connection.execute(
             sqlalchemy.text(
-                "UPDATE global_inventory "
-                "SET num_red_ml = num_red_ml + :red_ml, "
-                "num_green_ml = num_green_ml + :green_ml, "
-                "num_blue_ml = num_blue_ml + :blue_ml, "
-                "gold = gold - :red_price - :green_price - :blue_price"
+                """
+                INSERT INTO inventory_ledger_entries (transaction_id, change_gold, change_red, change_green, change_blue)
+                VALUES (:transaction_id, -:total_cost, :red_ml, :green_ml, :blue_ml)
+                """
             )
-            .params(red_ml=red_ml, green_ml=green_ml, blue_ml=blue_ml, red_price=red_price, green_price=green_price, blue_price=blue_price)
+            .params(transaction_id=transaction_id,
+                    total_cost=red_price+green_price+blue_price,
+                    red_ml=red_ml,
+                    green_ml=green_ml,
+                    blue_ml=blue_ml)
         )
 
     return "OK"
@@ -66,27 +79,63 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
 
     with db.engine.begin() as connection:
-        potions = connection.execute(
+        inventory = connection.execute(
             sqlalchemy.text(
-                "SELECT * "
-                "FROM global_inventory"
+                """
+                WITH combined_ledgers AS (
+                    SELECT change_gold, change_red, change_green, change_blue
+                    FROM inventory_ledger_entries
+                    UNION ALL
+                    SELECT 0 AS change_gold, change_red, change_green, change_blue
+                    FROM potion_ledger_entries
                 )
-                ).first()
-        
-        rgb_count = connection.execute(sqlalchemy.text(
-                "SELECT "
-                "SUM(red_amount * num_potion) AS total_red, "
-                "SUM(green_amount * num_potion) AS total_green, "
-                "SUM(blue_amount * num_potion) AS total_blue "
-                "FROM potions"
-            )).first()
+                SELECT
+                    COALESCE(SUM(change_gold), 0) AS gold,
+                    COALESCE(SUM(change_red), 0) AS num_red_ml,
+                    COALESCE(SUM(change_green), 0) AS num_green_ml,
+                    COALESCE(SUM(change_blue), 0) AS num_blue_ml
+                FROM combined_ledgers
+                """
+            )
+        ).first()
+
+        customer_ml = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT
+                    COALESCE(SUM(potions.red_amount * customer_ledger_entries.change_potions), 0) AS total_red,
+                    COALESCE(SUM(potions.green_amount * customer_ledger_entries.change_potions), 0) AS total_green,
+                    COALESCE(SUM(potions.blue_amount * customer_ledger_entries.change_potions), 0) AS total_blue,
+                    COALESCE(SUM(change_gold), 0) AS gold
+                FROM customer_ledger_entries
+                JOIN potions ON customer_ledger_entries.item_sku = potions.item_sku
+                """
+            )
+        ).first()
+
+        bottled_ml = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT
+                    COALESCE(SUM(potions.red_amount * potion_ledger_entries.change_potions), 0) AS total_red,
+                    COALESCE(SUM(potions.green_amount * potion_ledger_entries.change_potions), 0) AS total_green,
+                    COALESCE(SUM(potions.blue_amount * potion_ledger_entries.change_potions), 0) AS total_blue
+                FROM public.potion_ledger_entries
+                JOIN potions ON potion_ledger_entries.item_sku = potions.item_sku
+                """
+            )
+        ).first()
+
+    bottled_red_ml = customer_ml.total_red + bottled_ml.total_red
+    bottled_green_ml = customer_ml.total_green + bottled_ml.total_green
+    bottled_blue_ml = customer_ml.total_blue + bottled_ml.total_blue
 
     purchase_plan = []
-    gold = potions.gold
+    gold = inventory.gold + customer_ml.gold
 
     if gold < 60:
         return purchase_plan
-    
+
     desired_size = []
     if gold > 1500:
         purch_quant = gold // 1500
@@ -111,12 +160,12 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     colors_sorted = []
 
-    num_red_potions = rgb_count.total_red / 100
-    num_green_potions = rgb_count.total_green / 100
-    num_blue_potions = rgb_count.total_blue / 100
-    ml_red = potions.num_red_ml / 100
-    ml_green = potions.num_green_ml / 100
-    ml_blue = potions.num_blue_ml / 100
+    num_red_potions = bottled_red_ml / 100
+    num_green_potions = bottled_green_ml / 100
+    num_blue_potions = bottled_blue_ml / 100
+    ml_red = inventory.num_red_ml / 100
+    ml_green = inventory.num_green_ml / 100
+    ml_blue = inventory.num_blue_ml / 100
     threshold = math.ceil((ml_red + ml_green + ml_blue) / 2) + 1
 
     colors_sorted = []
@@ -160,5 +209,5 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     used_colors = set()
                 else:
                     return purchase_plan
-    
+
     return purchase_plan

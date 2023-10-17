@@ -15,12 +15,53 @@ router = APIRouter(
 def get_inventory():
     """ """
     with db.engine.begin() as connection:
-        ml = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory")).first()
-        potions = connection.execute(sqlalchemy.text("SELECT SUM(potions.num_potion) FROM potions")).scalar()
+        inventory = connection.execute(
+            sqlalchemy.text(
+                """
+                WITH combined_ledgers AS (
+                    SELECT change_gold, change_red, change_green, change_blue
+                    FROM inventory_ledger_entries
+                    UNION ALL
+                    SELECT 0 AS change_gold, change_red, change_green, change_blue
+                    FROM potion_ledger_entries
+                )
+                SELECT
+                    COALESCE(SUM(change_gold), 0) AS gold,
+                    COALESCE(SUM(change_red), 0) AS num_red_ml,
+                    COALESCE(SUM(change_green), 0) AS num_green_ml,
+                    COALESCE(SUM(change_blue), 0) AS num_blue_ml
+                FROM combined_ledgers
+                """
+            )
+        ).first()
+
+        customer_potions = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT
+                    COALESCE(SUM(change_potions), 0) AS total_potions,
+                    COALESCE(SUM(change_gold), 0) AS gold
+                FROM customer_ledger_entries
+                """
+            )
+        ).first()
+
+        bottled_potions = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT
+                    COALESCE(SUM(change_potions), 0) AS total_potions
+                FROM potion_ledger_entries
+                """
+            )
+        ).first()
+
+    gold = customer_potions.gold + inventory.gold
+    potions = customer_potions.total_potions + bottled_potions.total_potions
 
     return {"number_of_potions": potions, 
-            "ml_in_barrels": ml.num_red_ml + ml.num_green_ml + ml.num_blue_ml, 
-            "gold": ml.gold}
+            "ml_in_barrels": inventory.num_red_ml + inventory.num_green_ml + inventory.num_blue_ml, 
+            "gold": gold}
 
 class Result(BaseModel):
     gold_match: bool
@@ -34,57 +75,3 @@ def post_audit_results(audit_explanation: Result):
     print(audit_explanation)
 
     return "OK"
-
-# To be called once every 3 days (resets potions sold after called)
-@router.post("/adjust")
-def adjust_price():
-    UPPER_PERCENTAGE = 20
-    LOWER_PERCENTAGE = 10
-    PRICE_INCREASE_AMOUNT = 3
-    PRICE_DECREASE_AMOUNT = 3
-    MINIMUM_SALES_THRESHOLD = 10
-
-    changes_made = []
-
-    with db.engine.begin() as connection:
-        total_sold = connection.execute(
-            sqlalchemy.text("SELECT SUM(potions_sold) FROM potions")
-        ).scalar()
-
-        if total_sold < MINIMUM_SALES_THRESHOLD:
-            return changes_made
-
-        potions_data = connection.execute(
-            sqlalchemy.text("SELECT item_sku, potions_sold, cost, num_potion FROM potions")
-        )
-
-        for potion in potions_data:
-            if potion.num_potion == 0:
-                continue
-
-            sales_percentage = (potion.potions_sold / total_sold) * 100
-
-            if sales_percentage >= UPPER_PERCENTAGE and potion.cost < 80:
-                new_cost = min(potion.cost + PRICE_INCREASE_AMOUNT, 80)
-                connection.execute(
-                    sqlalchemy.text(
-                        "UPDATE potions SET cost = :new_cost, potions_sold = 0 WHERE item_sku = :item_sku"
-                    ).params(new_cost=new_cost, item_sku=potion.item_sku)
-                )
-                changes_made.append(f"Adjusted price of {potion.item_sku} from {potion.cost} to {new_cost}.")
-            elif sales_percentage <= LOWER_PERCENTAGE and potion.cost > 40:
-                new_cost = max(potion.cost - PRICE_DECREASE_AMOUNT, 40)
-                connection.execute(
-                    sqlalchemy.text(
-                        "UPDATE potions SET cost = :new_cost, potions_sold = 0 WHERE item_sku = :item_sku"
-                    ).params(new_cost=new_cost, item_sku=potion.item_sku)
-                )
-                changes_made.append(f"Adjusted price of {potion.item_sku} from {potion.cost} to {new_cost}.")
-            else:
-                connection.execute(
-                    sqlalchemy.text(
-                        "UPDATE potions SET potions_sold = 0 WHERE item_sku = :item_sku"
-                    ).params(item_sku=potion.item_sku)
-                )
-
-    return changes_made

@@ -21,45 +21,61 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     """ """
     print(potions_delivered)
 
-    red = 0
-    green = 0
-    blue = 0
     with db.engine.begin() as connection:
+        total_potions_bottled = sum([potion.quantity for potion in potions_delivered])
+
+        transaction_id = connection.execute(
+            sqlalchemy.text(
+                "INSERT INTO transactions (description, type) VALUES (:description, :transaction_type) RETURNING id"
+            ).params(
+                description=f"Bottled {total_potions_bottled} potions",
+                transaction_type="Bottler"
+            )
+        ).first().id
+
         for potion in potions_delivered:
-            red += potion.potion_type[0] * potion.quantity
-            green += potion.potion_type[1] * potion.quantity
-            blue += potion.potion_type[2] * potion.quantity
-            connection.execute(
+            change_red_ml = - (potion.potion_type[0] * potion.quantity)
+            change_green_ml = - (potion.potion_type[1] * potion.quantity)
+            change_blue_ml = - (potion.potion_type[2] * potion.quantity)
+
+            item_sku = connection.execute(
                 sqlalchemy.text(
-                    "UPDATE potions "
-                    "SET num_potion = num_potion + :quantity "
-                    "WHERE red_amount = :red_amount AND "
+                    "SELECT item_sku FROM potions WHERE "
+                    "red_amount = :red_amount AND "
                     "green_amount = :green_amount AND "
                     "blue_amount = :blue_amount AND "
                     "dark_amount = :dark_amount"
-                )
-                .params(
-                    quantity=potion.quantity,
+                ).params(
                     red_amount=potion.potion_type[0],
                     green_amount=potion.potion_type[1],
                     blue_amount=potion.potion_type[2],
                     dark_amount=potion.potion_type[3]
                 )
-            )
+            ).first().item_sku
 
-        connection.execute(
-            sqlalchemy.text(
-                "UPDATE global_inventory "
-                "SET num_red_ml = num_red_ml - :red_ml, "
-                "num_green_ml = num_green_ml - :green_ml, "
-                "num_blue_ml = num_blue_ml - :blue_ml"
+            connection.execute(
+                sqlalchemy.text(
+                    """
+                    INSERT INTO potion_ledger_entries (
+                        transaction_id,
+                        item_sku,
+                        change_potions,
+                        change_red,
+                        change_green,
+                        change_blue
+                    )
+                    VALUES (:transaction_id, :item_sku, :change_potions, :change_red, :change_green, :change_blue)
+                    """
+                )
+                .params(
+                    transaction_id=transaction_id,
+                    item_sku=item_sku,
+                    change_potions=potion.quantity,
+                    change_red=change_red_ml,
+                    change_green=change_green_ml,
+                    change_blue=change_blue_ml
+                )
             )
-            .params(
-                red_ml=red,
-                green_ml=green,
-                blue_ml=blue
-            )
-        )
 
     return "OK"
 
@@ -79,21 +95,51 @@ def get_bottle_plan():
     with db.engine.begin() as connection:
         ml = connection.execute(
             sqlalchemy.text(
-                "SELECT * FROM global_inventory"
+                """
+                WITH combined_ledgers AS (
+                    SELECT change_red, change_green, change_blue FROM inventory_ledger_entries
+                    UNION ALL
+                    SELECT change_red, change_green, change_blue FROM potion_ledger_entries
                 )
-                ).first()
+                SELECT
+                    COALESCE(SUM(change_red), 0) AS num_red_ml,
+                    COALESCE(SUM(change_green), 0) AS num_green_ml,
+                    COALESCE(SUM(change_blue), 0) AS num_blue_ml
+                FROM combined_ledgers
+                """
+            )
+        ).first()
+
 
         potions = connection.execute(
             sqlalchemy.text(
-                "SELECT * FROM potions ORDER BY num_potion ASC"
+                """
+                WITH combined_ledgers AS (
+                    SELECT
+                        item_sku,
+                        COALESCE(SUM(change_potions), 0) AS total_potions
+                    FROM (
+                        SELECT item_sku, change_potions FROM customer_ledger_entries
+                        UNION ALL
+                        SELECT item_sku, change_potions FROM potion_ledger_entries
+                    ) AS temp
+                    GROUP BY item_sku
                 )
-                )
-        
-        sum_potions = connection.execute(
-            sqlalchemy.text(
-                "SELECT SUM(num_potion) FROM potions"
-                )
-                ).scalar()
+                SELECT
+                    potions.item_sku,
+                    potions.red_amount,
+                    potions.green_amount,
+                    potions.blue_amount,
+                    potions.dark_amount,
+                    COALESCE(combined_ledgers.total_potions, 0) AS total_potions
+                FROM potions
+                LEFT JOIN combined_ledgers ON potions.item_sku = combined_ledgers.item_sku
+                ORDER BY COALESCE(combined_ledgers.total_potions, 0) ASC
+                """
+            )
+        ).fetchall()
+
+    sum_potions = sum([row.total_potions for row in potions])
 
     bottle_plan = []
 
@@ -106,7 +152,7 @@ def get_bottle_plan():
         if red + green + blue < 100:
             return bottle_plan
 
-        if row.num_potion > math.ceil((sum_potions + 1) / 5):
+        if row.total_potions > math.ceil((sum_potions + 1) / 5):
             continue
 
         possible = min(
@@ -114,7 +160,7 @@ def get_bottle_plan():
             float('inf') if row.green_amount == 0 else green // row.green_amount,
             float('inf') if row.blue_amount == 0 else blue // row.blue_amount
         )
-        num_potion = min(possible, 42 - row.num_potion, avg_potion)
+        num_potion = min(possible, 42 - row.total_potions, avg_potion)
         if num_potion > 0:
             red -= row.red_amount * num_potion
             green -= row.green_amount * num_potion

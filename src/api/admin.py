@@ -19,31 +19,31 @@ def reset():
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
-                "DELETE FROM cart_customers"
+                """
+                DELETE FROM customer_ledger_entries;
+                DELETE FROM potion_ledger_entries;
+                DELETE FROM inventory_ledger_entries;
+                DELETE FROM cart_items;
+                DELETE FROM cart_customers;
+                DELETE FROM transactions;
+                """
             )
         )
 
-        connection.execute(
+        transaction_id = connection.execute(
             sqlalchemy.text(
-                "DELETE FROM cart_items"
+                "INSERT INTO transactions (type, description) VALUES ('Reset', 'Game Reset') RETURNING id"
             )
-        )
+        ).first().id
 
         connection.execute(
             sqlalchemy.text(
-                "UPDATE global_inventory "
-                "SET gold = 100, "
-                "num_red_ml = 0, "
-                "num_green_ml = 0, "
-                "num_blue_ml = 0"
+                """
+                INSERT INTO inventory_ledger_entries (transaction_id, change_gold, change_red, change_green, change_blue)
+                VALUES (:transaction_id, 100, 0, 0, 0)
+                """
             )
-        )
-
-        connection.execute(
-            sqlalchemy.text(
-                "UPDATE potions "
-                "SET num_potion = 0"
-            )
+            .params(transaction_id=transaction_id)
         )
 
     return "OK"
@@ -52,10 +52,9 @@ def reset():
 @router.get("/shop_info/")
 def get_shop_info():
     """ """
-    
+
     # TODO: Change me!
     return {
         "shop_name": "Dillon's Dandy Boutique",
         "shop_owner": "Dillon Murphy",
     }
-
