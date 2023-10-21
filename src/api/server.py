@@ -22,13 +22,22 @@ app = FastAPI(
     },
 )
 
+<<<<<<< HEAD
 origins = ["*"]
+=======
+origins = ["https://potion-exchange.vercel.app"]
+>>>>>>> jackalnom-main
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+<<<<<<< HEAD
     allow_credentials=False,
     allow_methods=["*"],
+=======
+    allow_credentials=True,
+    allow_methods=["GET", "OPTIONS"],
+>>>>>>> jackalnom-main
     allow_headers=["*"],
 )
 
