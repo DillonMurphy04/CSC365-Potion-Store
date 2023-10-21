@@ -19,7 +19,7 @@ class search_sort_options(str, Enum):
 
 class search_sort_order(str, Enum):
     asc = "asc"
-    desc = "desc"   
+    desc = "desc"
 
 @router.get("/search/", tags=["search"])
 def search_orders(
@@ -50,11 +50,8 @@ def search_orders(
     such pages exist) and the results as an array of line items. Each
     line item contains the line item id (must be unique), item sku, 
     customer name, line item total (in gold), and timestamp of the order.
-<<<<<<< HEAD
-=======
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
->>>>>>> jackalnom-main
     """
 
     return {
