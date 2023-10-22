@@ -53,19 +53,32 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+    print(sort_col.value)
+    with db.engine.begin() as connection:
+        customer_transactions = connection.execute(
+            sqlalchemy.text(
+                f"""
+                SELECT
+                    cle.id AS line_item_id,
+                    cle.item_sku,
+                    cc.customer AS customer_name,
+                    cle.change_gold AS line_item_total,
+                    t.created_at AS timestamp
+                FROM customer_ledger_entries AS cle
+                JOIN cart_customers AS cc ON cle.customer_id = cc.id
+                JOIN transactions AS t ON cle.transaction_id = t.id
+                ORDER BY {sort_col.value} {sort_order.value}
+                LIMIT 5
+                """
+            )
+        )
+
+    items = [row._asdict() for row in customer_transactions]
 
     return {
         "previous": "",
         "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
-            }
-        ],
+        "results": items,
     }
 
 
