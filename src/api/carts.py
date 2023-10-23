@@ -69,9 +69,9 @@ def search_orders(
 
     if search_page:
         if sort_order == search_sort_order.desc:
-            row_num = "line_item_id < :cursor"
+            row_num = "ROW_NUMBER() < :cursor"
         else:
-            row_num = "line_item_id > :cursor"
+            row_num = "ROW_NUMBER() > :cursor"
         params["cursor"] = int(search_page)
     else:
         row_num = "TRUE"
@@ -93,7 +93,7 @@ def search_orders(
                     ORDER BY {sort_col.value} {sort_order.value}
                 )
                 SELECT
-                    ROW_NUMBER() OVER() AS line_item_id,
+                    ROW_NUMBER() AS line_item_id,
                     item_sku,
                     customer_name,
                     line_item_total,
