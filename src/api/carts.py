@@ -53,8 +53,7 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
-    print(search_page)
-    
+
     filters = []
     params = {}
 
@@ -98,7 +97,32 @@ def search_orders(
             ).params(params)
         )
 
-    items = [row._asdict() for row in customer_transactions]
+        items = [row._asdict() for row in customer_transactions]
+
+        if search_page:
+            current_first = items[0][sort_col.value]
+            previous_cursor = connection.execute(
+                sqlalchemy.text(
+                    f"""
+                    WITH temp AS (
+                        SELECT
+                            cle.id AS line_item_id,
+                            cle.item_sku,
+                            cc.customer AS customer_name,
+                            cle.change_gold AS line_item_total,
+                            t.created_at AS timestamp
+                        FROM customer_ledger_entries AS cle
+                        JOIN cart_customers AS cc ON cle.customer_id = cc.id
+                        JOIN transactions AS t ON cle.transaction_id = t.id
+                        ORDER BY {sort_col.value} {sort_order.value}
+                    )
+                    SELECT {sort_col.value}
+                    FROM temp
+                    WHERE {sort_col.value} {">" if sort_order == search_sort_order.desc else "<"} :current_first
+                    LIMIT 1 OFFSET 5
+                    """
+                ).params({"current_first": current_first})
+            ).scalar()
 
     next_cursor = ""
     if len(items) == 6:
@@ -106,7 +130,7 @@ def search_orders(
         items.pop()
 
     return {
-        "previous": "",
+        "previous": previous_cursor if previous_cursor is not None else "",
         "next": next_cursor,
         "results": items,
     }
