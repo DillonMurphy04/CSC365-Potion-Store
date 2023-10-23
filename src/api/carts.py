@@ -103,6 +103,7 @@ def search_orders(
 
         if search_page:
             current_first = items[0][sort_col.value]
+            print("Name", items[0][customer_name])
             previous_cursor = connection.execute(
                 sqlalchemy.text(
                     f"""
@@ -125,6 +126,8 @@ def search_orders(
                     """
                 ).params({"current_first": current_first})
             ).scalar()
+
+        print("Previous", previous_cursor)
 
     if len(items) == 6:
         next_cursor = items[-1][sort_col.value]
