@@ -53,7 +53,26 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
-    print(sort_col.value)
+    filters = []
+    params = {}
+
+    if search_page:
+        if sort_order == search_sort_order.desc:
+            filters.append(f"{sort_col.value} < :cursor")
+        else:
+            filters.append(f"{sort_col.value} > :cursor")
+        params["cursor"] = search_page
+
+    if customer_name:
+        filters.append("cc.customer ILIKE :customer_name")
+        params["customer_name"] = f"%{customer_name}%"
+
+    if potion_sku:
+        filters.append("cle.item_sku ILIKE :potion_sku")
+        params["potion_sku"] = f"%{potion_sku}%"
+
+    where_clause = " AND ".join(filters) if filters else "TRUE"
+
     with db.engine.begin() as connection:
         customer_transactions = connection.execute(
             sqlalchemy.text(
@@ -67,17 +86,23 @@ def search_orders(
                 FROM customer_ledger_entries AS cle
                 JOIN cart_customers AS cc ON cle.customer_id = cc.id
                 JOIN transactions AS t ON cle.transaction_id = t.id
+                WHERE {where_clause}
                 ORDER BY {sort_col.value} {sort_order.value}
-                LIMIT 5
+                LIMIT 6
                 """
-            )
+            ).params(params)
         )
 
     items = [row._asdict() for row in customer_transactions]
 
+    next_cursor = ""
+    if len(items) == 6:
+        next_cursor = items[-1][sort_col.value]
+        items.pop()
+
     return {
         "previous": "",
-        "next": "",
+        "next": next_cursor,
         "results": items,
     }
 
