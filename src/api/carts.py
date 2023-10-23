@@ -56,6 +56,8 @@ def search_orders(
 
     filters = []
     params = {}
+    previous_cursor = None
+    next_cursor = ""
 
     if search_page:
         if sort_order == search_sort_order.desc:
@@ -124,7 +126,6 @@ def search_orders(
                 ).params({"current_first": current_first})
             ).scalar()
 
-    next_cursor = ""
     if len(items) == 6:
         next_cursor = items[-1][sort_col.value]
         items.pop()
