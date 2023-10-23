@@ -103,7 +103,6 @@ def search_orders(
 
         if search_page:
             current_first = items[0][sort_col.value]
-            print("Name", items[0][customer_name])
             previous_cursor = connection.execute(
                 sqlalchemy.text(
                     f"""
@@ -117,7 +116,7 @@ def search_orders(
                         FROM customer_ledger_entries AS cle
                         JOIN cart_customers AS cc ON cle.customer_id = cc.id
                         JOIN transactions AS t ON cle.transaction_id = t.id
-                        ORDER BY {sort_col.value} {sort_order.value}
+                        ORDER BY {sort_col.value} {'ASC' if sort_order == search_sort_order.desc else 'DESC'}
                     )
                     SELECT {sort_col.value}
                     FROM temp
@@ -126,8 +125,6 @@ def search_orders(
                     """
                 ).params({"current_first": current_first})
             ).scalar()
-
-        print("Previous", previous_cursor)
 
     if len(items) == 6:
         next_cursor = items[-1][sort_col.value]
