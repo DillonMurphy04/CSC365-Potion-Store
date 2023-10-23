@@ -53,6 +53,8 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+    print(search_page)
+    
     filters = []
     params = {}
 
@@ -64,11 +66,11 @@ def search_orders(
         params["cursor"] = search_page
 
     if customer_name:
-        filters.append("cc.customer ILIKE :customer_name")
+        filters.append("customer_name ILIKE :customer_name")
         params["customer_name"] = f"%{customer_name}%"
 
     if potion_sku:
-        filters.append("cle.item_sku ILIKE :potion_sku")
+        filters.append("item_sku ILIKE :potion_sku")
         params["potion_sku"] = f"%{potion_sku}%"
 
     where_clause = " AND ".join(filters) if filters else "TRUE"
