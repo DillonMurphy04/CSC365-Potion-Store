@@ -122,6 +122,7 @@ def search_orders(
         items.pop()
         next_cursor = items[-1]['line_item_id']
 
+    print(previous_cursor)
     return {
         "previous": previous_cursor,
         "next": next_cursor,
