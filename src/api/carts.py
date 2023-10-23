@@ -111,18 +111,15 @@ def search_orders(
     previous_cursor = ""
     next_cursor = ""
 
-    current_first = items[0]['line_item_id']
-    print(current_first)
-
-    if current_first > 5:
-        previous_cursor = max(current_first - 5, 1)
-        print(max(current_first - 5, 1))
+    if items:
+        current_first = items[0]['line_item_id']
+        if current_first > 5:
+            previous_cursor = max(current_first - 5, 1)
 
     if len(items) == 6:
         next_cursor = items[-1]['line_item_id']
         items.pop()
 
-    print(previous_cursor)
     return {
         "previous": previous_cursor,
         "next": next_cursor,
