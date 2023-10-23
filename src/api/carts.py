@@ -77,15 +77,18 @@ def search_orders(
         customer_transactions = connection.execute(
             sqlalchemy.text(
                 f"""
-                SELECT
-                    cle.id AS line_item_id,
-                    cle.item_sku,
-                    cc.customer AS customer_name,
-                    cle.change_gold AS line_item_total,
-                    t.created_at AS timestamp
-                FROM customer_ledger_entries AS cle
-                JOIN cart_customers AS cc ON cle.customer_id = cc.id
-                JOIN transactions AS t ON cle.transaction_id = t.id
+                WITH temp AS (
+                    SELECT
+                        cle.id AS line_item_id,
+                        cle.item_sku,
+                        cc.customer AS customer_name,
+                        cle.change_gold AS line_item_total,
+                        t.created_at AS timestamp
+                    FROM customer_ledger_entries AS cle
+                    JOIN cart_customers AS cc ON cle.customer_id = cc.id
+                    JOIN transactions AS t ON cle.transaction_id = t.id
+                )
+                SELECT * FROM temp
                 WHERE {where_clause}
                 ORDER BY {sort_col.value} {sort_order.value}
                 LIMIT 6
