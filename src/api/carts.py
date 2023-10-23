@@ -111,8 +111,9 @@ def search_orders(
     previous_cursor = ""
     next_cursor = ""
 
-    if search_page and items:
-        current_first = items[0]['line_item_id']
+    current_first = items[0]['line_item_id']
+
+    if current_first > 5:
         previous_cursor = max(current_first - 6, 0)
 
     if len(items) == 6:
