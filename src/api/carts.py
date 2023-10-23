@@ -94,7 +94,7 @@ def search_orders(
                 ),
                 numbered_rows AS (
                     SELECT
-                        ROW_NUMBER() AS line_item_id,
+                        ROW_NUMBER() OVER() AS line_item_id,
                         item_sku,
                         customer_name,
                         line_item_total,
