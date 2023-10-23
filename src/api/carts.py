@@ -68,7 +68,7 @@ def search_orders(
     where_clause = " AND ".join(filters) if filters else "TRUE"
 
     if search_page:
-        row_num = "line_item_id > :cursor"
+        row_num = "line_item_id >= :cursor"
         params["cursor"] = int(search_page)
     else:
         row_num = "TRUE"
@@ -115,12 +115,12 @@ def search_orders(
     print(current_first)
 
     if current_first > 5:
-        previous_cursor = max(current_first - 6, 0)
-        print(max(current_first - 6, 0))
+        previous_cursor = max(current_first - 5, 1)
+        print(max(current_first - 5, 1))
 
     if len(items) == 6:
-        items.pop()
         next_cursor = items[-1]['line_item_id']
+        items.pop()
 
     print(previous_cursor)
     return {
