@@ -121,7 +121,7 @@ def search_orders(
                     SELECT {sort_col.value}
                     FROM temp
                     WHERE {sort_col.value} {">" if sort_order == search_sort_order.desc else "<"} :current_first
-                    LIMIT 1 OFFSET 5
+                    LIMIT 1 OFFSET 6
                     """
                 ).params({"current_first": current_first})
             ).scalar()
