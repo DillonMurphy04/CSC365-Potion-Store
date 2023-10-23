@@ -58,11 +58,11 @@ def search_orders(
     params = {}
 
     if customer_name:
-        filters.append("customer_name ILIKE :customer_name")
+        filters.append("cc.customer ILIKE :customer_name")
         params["customer_name"] = f"%{customer_name}%"
 
     if potion_sku:
-        filters.append("item_sku ILIKE :potion_sku")
+        filters.append("cle.item_sku ILIKE :potion_sku")
         params["potion_sku"] = f"%{potion_sku}%"
 
     where_clause = " AND ".join(filters) if filters else "TRUE"
