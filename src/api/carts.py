@@ -68,10 +68,7 @@ def search_orders(
     where_clause = " AND ".join(filters) if filters else "TRUE"
 
     if search_page:
-        if sort_order == search_sort_order.desc:
-            row_num = "line_item_id < :cursor"
-        else:
-            row_num = "line_item_id > :cursor"
+        row_num = "line_item_id > :cursor"
         params["cursor"] = int(search_page)
     else:
         row_num = "TRUE"
