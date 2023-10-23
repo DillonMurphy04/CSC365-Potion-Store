@@ -118,8 +118,8 @@ def search_orders(
         previous_cursor = items[0]['line_item_id']
 
     if len(items) == 6:
-        next_cursor = items[-1]['line_item_id']
         items.pop()
+        next_cursor = items[-1]['line_item_id']
 
     return {
         "previous": previous_cursor,
