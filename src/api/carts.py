@@ -115,15 +115,12 @@ def search_orders(
     next_cursor = ""
 
     if search_page and items:
-        previous_cursor = items[0]['line_item_id']
+        current_first = items[0]['line_item_id']
+        previous_cursor = max(current_first - 5, 0)
 
     if len(items) == 6:
         items.pop()
         next_cursor = items[-1]['line_item_id']
-
-    print(items)
-
-    print(previous_cursor, next_cursor)
 
     return {
         "previous": previous_cursor,
