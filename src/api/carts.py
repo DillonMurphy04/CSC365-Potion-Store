@@ -113,7 +113,7 @@ def search_orders(
 
     if search_page and items:
         current_first = items[0]['line_item_id']
-        previous_cursor = max(current_first - 5, 0)
+        previous_cursor = max(current_first - 6, 0)
 
     if len(items) == 6:
         items.pop()
