@@ -91,7 +91,7 @@ def search_orders(
                     JOIN transactions AS t ON cle.transaction_id = t.id
                     WHERE {where_clause}
                     ORDER BY {sort_col.value} {sort_order.value}
-                )
+                ),
                 numbered_rows AS (
                     SELECT
                         ROW_NUMBER() AS line_item_id,
