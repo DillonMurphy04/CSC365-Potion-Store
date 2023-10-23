@@ -56,15 +56,6 @@ def search_orders(
 
     filters = []
     params = {}
-    previous_cursor = None
-    next_cursor = ""
-
-    if search_page:
-        if sort_order == search_sort_order.desc:
-            filters.append(f"{sort_col.value} < :cursor")
-        else:
-            filters.append(f"{sort_col.value} > :cursor")
-        params["cursor"] = search_page
 
     if customer_name:
         filters.append("customer_name ILIKE :customer_name")
@@ -76,13 +67,21 @@ def search_orders(
 
     where_clause = " AND ".join(filters) if filters else "TRUE"
 
+    if search_page:
+        if sort_order == search_sort_order.desc:
+            row_num = "line_item_id < :cursor"
+        else:
+            row_num = "line_item_id > :cursor"
+        params["cursor"] = int(search_page)
+    else:
+        row_num = "TRUE"
+
     with db.engine.begin() as connection:
         customer_transactions = connection.execute(
             sqlalchemy.text(
                 f"""
                 WITH temp AS (
                     SELECT
-                        cle.id AS line_item_id,
                         cle.item_sku,
                         cc.customer AS customer_name,
                         cle.change_gold AS line_item_total,
@@ -90,48 +89,36 @@ def search_orders(
                     FROM customer_ledger_entries AS cle
                     JOIN cart_customers AS cc ON cle.customer_id = cc.id
                     JOIN transactions AS t ON cle.transaction_id = t.id
+                    WHERE {where_clause}
+                    ORDER BY {sort_col.value} {sort_order.value}
                 )
-                SELECT * FROM temp
-                WHERE {where_clause}
-                ORDER BY {sort_col.value} {sort_order.value}
+                SELECT
+                    ROW_NUMBER() OVER() AS line_item_id,
+                    item_sku,
+                    customer_name,
+                    line_item_total,
+                    timestamp
+                FROM temp
+                WHERE {row_num}
                 LIMIT 6
                 """
             ).params(params)
         )
 
-        items = [row._asdict() for row in customer_transactions]
+    items = [row._asdict() for row in customer_transactions]
 
-        if search_page:
-            current_first = items[0][sort_col.value]
-            previous_cursor = connection.execute(
-                sqlalchemy.text(
-                    f"""
-                    WITH temp AS (
-                        SELECT
-                            cle.id AS line_item_id,
-                            cle.item_sku,
-                            cc.customer AS customer_name,
-                            cle.change_gold AS line_item_total,
-                            t.created_at AS timestamp
-                        FROM customer_ledger_entries AS cle
-                        JOIN cart_customers AS cc ON cle.customer_id = cc.id
-                        JOIN transactions AS t ON cle.transaction_id = t.id
-                        ORDER BY {sort_col.value} {'ASC' if sort_order == search_sort_order.desc else 'DESC'}
-                    )
-                    SELECT {sort_col.value}
-                    FROM temp
-                    WHERE {sort_col.value} {">" if sort_order == search_sort_order.desc else "<"} :current_first
-                    LIMIT 1 OFFSET 6
-                    """
-                ).params({"current_first": current_first})
-            ).scalar()
+    previous_cursor = ""
+    next_cursor = ""
+
+    if search_page and items:
+        previous_cursor = items[0]['line_item_id']
 
     if len(items) == 6:
-        next_cursor = items[-1][sort_col.value]
+        next_cursor = items[-1]['line_item_id']
         items.pop()
 
     return {
-        "previous": previous_cursor if previous_cursor is not None else "",
+        "previous": previous_cursor,
         "next": next_cursor,
         "results": items,
     }
