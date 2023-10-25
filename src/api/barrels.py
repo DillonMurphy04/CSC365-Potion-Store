@@ -181,16 +181,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     threshold = math.ceil((ml_red + ml_green + ml_blue + ml_dark) / 2) + 1
 
     colors_sorted = []
-    if num_red_potions < 200:
+    if ml_red < 150:
         if ml_red <= threshold:
             colors_sorted.append((num_red_potions, "RED"))
-    if num_green_potions < 200:
+    if ml_green < 150:
         if ml_green <= threshold:
             colors_sorted.append((num_green_potions, "GREEN"))
-    if num_blue_potions < 200:
+    if ml_blue < 100:
         if ml_blue <= threshold:
             colors_sorted.append((num_blue_potions, "BLUE"))
-    if num_dark_potions < 200:
+    if ml_dark < 150:
         if ml_dark <= threshold:
             colors_sorted.append((num_dark_potions, "DARK"))
 
