@@ -39,8 +39,8 @@ def reset():
         connection.execute(
             sqlalchemy.text(
                 """
-                INSERT INTO inventory_ledger_entries (transaction_id, change_gold, change_red, change_green, change_blue)
-                VALUES (:transaction_id, 100, 0, 0, 0)
+                INSERT INTO inventory_ledger_entries (transaction_id, change_gold, change_red, change_green, change_blue, change_dark)
+                VALUES (:transaction_id, 100, 0, 0, 0, 0)
                 """
             )
             .params(transaction_id=transaction_id)

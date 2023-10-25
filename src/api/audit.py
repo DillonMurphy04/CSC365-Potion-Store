@@ -19,17 +19,18 @@ def get_inventory():
             sqlalchemy.text(
                 """
                 WITH combined_ledgers AS (
-                    SELECT change_gold, change_red, change_green, change_blue
+                    SELECT change_gold, change_red, change_green, change_blue, change_dark
                     FROM inventory_ledger_entries
                     UNION ALL
-                    SELECT 0 AS change_gold, change_red, change_green, change_blue
+                    SELECT 0 AS change_gold, change_red, change_green, change_blue, change_dark
                     FROM potion_ledger_entries
                 )
                 SELECT
                     COALESCE(SUM(change_gold), 0) AS gold,
                     COALESCE(SUM(change_red), 0) AS num_red_ml,
                     COALESCE(SUM(change_green), 0) AS num_green_ml,
-                    COALESCE(SUM(change_blue), 0) AS num_blue_ml
+                    COALESCE(SUM(change_blue), 0) AS num_blue_ml,
+                    COALESCE(SUM(change_dark), 0) AS num_dark_ml
                 FROM combined_ledgers
                 """
             )
@@ -58,9 +59,8 @@ def get_inventory():
 
     gold = customer_potions.gold + inventory.gold
     potions = customer_potions.total_potions + bottled_potions.total_potions
-
     return {"number_of_potions": potions, 
-            "ml_in_barrels": inventory.num_red_ml + inventory.num_green_ml + inventory.num_blue_ml, 
+            "ml_in_barrels": inventory.num_red_ml + inventory.num_green_ml + inventory.num_blue_ml + inventory.num_dark_ml, 
             "gold": gold}
 
 class Result(BaseModel):

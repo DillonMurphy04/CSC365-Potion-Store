@@ -37,6 +37,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
             change_red_ml = - (potion.potion_type[0] * potion.quantity)
             change_green_ml = - (potion.potion_type[1] * potion.quantity)
             change_blue_ml = - (potion.potion_type[2] * potion.quantity)
+            change_dark_ml = - (potion.potion_type[3] * potion.quantity)
 
             item_sku = connection.execute(
                 sqlalchemy.text(
@@ -62,9 +63,10 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
                         change_potions,
                         change_red,
                         change_green,
-                        change_blue
+                        change_blue,
+                        change_dark
                     )
-                    VALUES (:transaction_id, :item_sku, :change_potions, :change_red, :change_green, :change_blue)
+                    VALUES (:transaction_id, :item_sku, :change_potions, :change_red, :change_green, :change_blue, :change_dark)
                     """
                 )
                 .params(
@@ -73,7 +75,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
                     change_potions=potion.quantity,
                     change_red=change_red_ml,
                     change_green=change_green_ml,
-                    change_blue=change_blue_ml
+                    change_blue=change_blue_ml,
+                    change_dark=change_dark_ml
                 )
             )
 
@@ -97,14 +100,15 @@ def get_bottle_plan():
             sqlalchemy.text(
                 """
                 WITH combined_ledgers AS (
-                    SELECT change_red, change_green, change_blue FROM inventory_ledger_entries
+                    SELECT change_red, change_green, change_blue, change_dark FROM inventory_ledger_entries
                     UNION ALL
-                    SELECT change_red, change_green, change_blue FROM potion_ledger_entries
+                    SELECT change_red, change_green, change_blue, change_dark FROM potion_ledger_entries
                 )
                 SELECT
                     COALESCE(SUM(change_red), 0) AS num_red_ml,
                     COALESCE(SUM(change_green), 0) AS num_green_ml,
-                    COALESCE(SUM(change_blue), 0) AS num_blue_ml
+                    COALESCE(SUM(change_blue), 0) AS num_blue_ml,
+                    COALESCE(SUM(change_dark), 0) AS num_dark_ml
                 FROM combined_ledgers
                 """
             )
@@ -146,10 +150,14 @@ def get_bottle_plan():
     red = ml.num_red_ml
     green = ml.num_green_ml
     blue = ml.num_blue_ml
-    avg_potion = math.ceil((red + green + blue) / 100 / 5)
+    dark = ml.num_dark_ml
+    avg_potion = math.ceil((red + green + blue + dark) / 100 / 5)
 
     for row in potions:
-        if red + green + blue < 100:
+        if row.item_sku == "teal_potions":
+            continue
+
+        if red + green + blue + dark < 100:
             return bottle_plan
 
         if row.total_potions > math.ceil((sum_potions + 1) / 5):
@@ -158,13 +166,15 @@ def get_bottle_plan():
         possible = min(
             float('inf') if row.red_amount == 0 else red // row.red_amount,
             float('inf') if row.green_amount == 0 else green // row.green_amount,
-            float('inf') if row.blue_amount == 0 else blue // row.blue_amount
+            float('inf') if row.blue_amount == 0 else blue // row.blue_amount,
+            float('inf') if row.dark_amount == 0 else dark // row.dark_amount
         )
         num_potion = min(possible, 42 - row.total_potions, avg_potion)
         if num_potion > 0:
             red -= row.red_amount * num_potion
             green -= row.green_amount * num_potion
             blue -= row.blue_amount * num_potion
+            dark -= row.dark_amount * num_potion
             bottle_plan.append({
                 "potion_type": [row.red_amount, row.green_amount, row.blue_amount, row.dark_amount],
                 "quantity": num_potion
