@@ -12,24 +12,29 @@ def get_catalog():
     with db.engine.begin() as connection:
         result = connection.execute(
             sqlalchemy.text("""
-                SELECT 
-                    potions.item_sku, 
-                    potions.cost,
-                    potions.red_amount,
-                    potions.green_amount,
-                    potions.blue_amount,
-                    potions.dark_amount,
-                    COALESCE(
-                        (SELECT SUM(change_potions) FROM potion_ledger_entries WHERE item_sku = potions.item_sku), 
-                        0
-                    ) +
-                    COALESCE(
-                        (SELECT SUM(change_potions) FROM customer_ledger_entries WHERE item_sku = potions.item_sku), 
-                        0
-                    ) as num_potion
-                FROM potions
-                ORDER BY num_potion DESC
-                LIMIT 6
+                WITH potions_count AS (
+                    SELECT 
+                        potions.item_sku, 
+                        potions.cost,
+                        potions.red_amount,
+                        potions.green_amount,
+                        potions.blue_amount,
+                        potions.dark_amount,
+                        COALESCE(
+                            (SELECT SUM(change_potions) FROM potion_ledger_entries WHERE item_sku = potions.item_sku), 
+                            0
+                        ) +
+                        COALESCE(
+                            (SELECT SUM(change_potions) FROM customer_ledger_entries WHERE item_sku = potions.item_sku), 
+                            0
+                        ) as num_potion
+                    FROM potions
+                )
+                SELECT *
+                FROM potions_count
+                WHERE num_potion > 0
+                ORDER BY num_potion ASC, RANDOM()
+                LIMIT 6;
             """)
         )
 
