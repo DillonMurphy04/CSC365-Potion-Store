@@ -78,6 +78,35 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 
     return "OK"
 
+def get_desired_size_for_color(gold, ml_color):
+    """Returns the desired sizes based on gold and current ml of the color"""
+    desired_size = []
+    if ml_color < 100:
+        if gold > 1500:
+            purch_quant = gold // 1500
+            desired_size.extend(["LARGE", "MEDIUM", "SMALL", "MINI"])
+        elif gold > 800:
+            purch_quant = 1
+            desired_size.extend(["MEDIUM", "SMALL", "MINI"])
+        elif gold > 320:
+            purch_quant = 1
+            desired_size.extend(["SMALL", "MINI"])
+        else:
+            purch_quant = 1
+            desired_size.append("MINI")
+    elif ml_color < 200:
+        if gold > 1500:
+            purch_quant = gold // 1500
+            desired_size.extend(["LARGE", "MEDIUM"])
+        elif gold > 800:
+            purch_quant = 1
+            desired_size.extend(["MEDIUM"])
+        else:
+            return [], 0
+    else:
+        return [], 0
+    return desired_size, purch_quant
+
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
@@ -146,20 +175,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     if gold < 60:
         return purchase_plan
 
-    desired_size = []
-    if gold > 1500:
-        purch_quant = gold // 1500
-        desired_size.extend(["LARGE", "MEDIUM", "SMALL", "MINI"])
-    elif gold > 800:
-        purch_quant = 1
-        desired_size.extend(["MEDIUM", "SMALL", "MINI"])
-    elif gold > 320:
-        purch_quant = 1
-        desired_size.extend(["SMALL", "MINI"])
-    else:
-        purch_quant = 1
-        desired_size.append("MINI")
-
     potion_info = defaultdict(dict)
 
     for barrel in wholesale_catalog:
@@ -181,16 +196,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     threshold = math.ceil((ml_red + ml_green + ml_blue + ml_dark) / 2) + 1
 
     colors_sorted = []
-    if ml_red < 150:
+    if ml_red < 200:
         if ml_red <= threshold:
             colors_sorted.append((num_red_potions, "RED"))
-    if ml_green < 150:
+    if ml_green < 200:
         if ml_green <= threshold:
             colors_sorted.append((num_green_potions, "GREEN"))
-    if ml_blue < 100:
+    if ml_blue < 150:
         if ml_blue <= threshold:
             colors_sorted.append((num_blue_potions, "BLUE"))
-    if ml_dark < 150:
+    if ml_dark < 200:
         if ml_dark <= threshold:
             colors_sorted.append((num_dark_potions, "DARK"))
 
@@ -202,10 +217,11 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     money_spent = 0
 
-    for size in desired_size:
-        if size not in potion_info:
-            continue
-        for quantity, color in colors_sorted:
+    for quantity, color in colors_sorted:
+        desired_sizes_for_color, purch_quant = get_desired_size_for_color(gold, eval(f"ml_{color.lower()}"))
+        for size in desired_sizes_for_color:
+            if size not in potion_info:
+                continue
             if color not in potion_info[size] or color in used_colors:
                 continue
             price, barrel_quantity = potion_info[size][color]
