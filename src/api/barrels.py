@@ -81,30 +81,31 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 def get_desired_size_for_color(gold, ml_color):
     """Returns the desired sizes based on gold and current ml of the color"""
     desired_size = []
-    if ml_color < 100:
-        if gold > 1500:
-            purch_quant = gold // 1500
+    purch_quant = 1
+
+    if gold > 1500:
+        purch_quant = gold // 1500
+        if ml_color < 10:
             desired_size.extend(["LARGE", "MEDIUM", "SMALL", "MINI"])
-        elif gold > 800:
-            purch_quant = 1
-            desired_size.extend(["MEDIUM", "SMALL", "MINI"])
-        elif gold > 320:
-            purch_quant = 1
-            desired_size.extend(["SMALL", "MINI"])
-        else:
-            purch_quant = 1
-            desired_size.append("MINI")
-    elif ml_color < 200:
-        if gold > 1500:
-            purch_quant = gold // 1500
+        elif ml_color < 50:
+            desired_size.extend(["LARGE", "MEDIUM", "SMALL"])
+        elif ml_color < 150:
             desired_size.extend(["LARGE", "MEDIUM"])
-        elif gold > 800:
-            purch_quant = 1
-            desired_size.extend(["MEDIUM"])
         else:
-            return [], 0
-    else:
-        return [], 0
+            desired_size.extend(["LARGE"])
+    elif gold > 800:
+        if ml_color < 10:
+            desired_size.extend(["MEDIUM", "SMALL", "MINI"])
+        elif ml_color < 50:
+            desired_size.extend(["MEDIUM", "SMALL"])
+        elif ml_color < 150:
+            desired_size.extend(["MEDIUM"])
+    elif gold > 320:
+        if ml_color < 10:
+            desired_size.extend(["SMALL", "MINI"])
+        elif ml_color < 50:
+            desired_size.extend(["SMALL"])
+
     return desired_size, purch_quant
 
 # Gets called once a day
