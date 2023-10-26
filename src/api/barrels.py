@@ -84,26 +84,26 @@ def get_desired_size_for_color(gold, ml_color):
     purch_quant = 1
 
     if gold > 1500:
-        purch_quant = gold // 1500
+        purch_quant = gold // 2550
         if ml_color < 10:
             desired_size.extend(["LARGE", "MEDIUM", "SMALL", "MINI"])
-        elif ml_color < 50:
+        elif ml_color < 20:
             desired_size.extend(["LARGE", "MEDIUM", "SMALL"])
-        elif ml_color < 150:
+        elif ml_color < 100:
             desired_size.extend(["LARGE", "MEDIUM"])
         else:
             desired_size.extend(["LARGE"])
     elif gold > 800:
         if ml_color < 10:
             desired_size.extend(["MEDIUM", "SMALL", "MINI"])
-        elif ml_color < 50:
+        elif ml_color < 20:
             desired_size.extend(["MEDIUM", "SMALL"])
-        elif ml_color < 150:
+        elif ml_color < 100:
             desired_size.extend(["MEDIUM"])
     elif gold > 320:
         if ml_color < 10:
             desired_size.extend(["SMALL", "MINI"])
-        elif ml_color < 50:
+        elif ml_color < 20:
             desired_size.extend(["SMALL"])
 
     return desired_size, purch_quant
@@ -178,11 +178,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     potion_info = defaultdict(dict)
 
+    offered_colors = set()
     for barrel in wholesale_catalog:
         parts = barrel.sku.split('_')
         color = parts[1]
         size = parts[0]
         potion_info[size][color] = (barrel.price, barrel.quantity)
+        offered_colors.add(color)
 
     colors_sorted = []
 
@@ -197,16 +199,19 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     threshold = math.ceil((ml_red + ml_green + ml_blue + ml_dark) / 2) + 1
 
     colors_sorted = []
-    if ml_red < 200:
+    if ml_red < 200 and "RED" in offered_colors:
         if ml_red <= threshold:
             colors_sorted.append((num_red_potions, "RED"))
-    if ml_green < 200:
+
+    if ml_green < 200 and "GREEN" in offered_colors:
         if ml_green <= threshold:
             colors_sorted.append((num_green_potions, "GREEN"))
-    if ml_blue < 150:
+
+    if ml_blue < 100 and "BLUE" in offered_colors:
         if ml_blue <= threshold:
             colors_sorted.append((num_blue_potions, "BLUE"))
-    if ml_dark < 200:
+
+    if ml_dark < 200 and "DARK" in offered_colors:
         if ml_dark <= threshold:
             colors_sorted.append((num_dark_potions, "DARK"))
 
@@ -218,24 +223,42 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     money_spent = 0
 
+    desired_sizes_dict = {}
+
     for quantity, color in colors_sorted:
         desired_sizes_for_color, purch_quant = get_desired_size_for_color(gold, eval(f"ml_{color.lower()}"))
-        for size in desired_sizes_for_color:
-            if size not in potion_info:
+        num_available_sizes = len(desired_sizes_for_color)
+        for index, size in enumerate(desired_sizes_for_color):
+            if size not in desired_sizes_dict:
+                desired_sizes_dict[size] = []
+            desired_sizes_dict[size].append((color, quantity, purch_quant, num_available_sizes - index))
+
+    sizes_order = ["LARGE", "MEDIUM", "SMALL", "MINI"]
+
+    for size in sizes_order:
+        if size not in desired_sizes_dict:
+            continue
+
+        for color, quantity, purch_quant, remaining_sizes in desired_sizes_dict[size]:
+            if remaining_sizes == 1:
+                colors_sorted = [item for item in colors_sorted if item[1] != color]
+            if color in used_colors:
                 continue
-            if color not in potion_info[size] or color in used_colors:
+            if size not in potion_info or color not in potion_info[size]:
                 continue
+
             price, barrel_quantity = potion_info[size][color]
+            purchase_quantity = min(purch_quant, barrel_quantity)
+
             if gold < 60:
                 return purchase_plan
-            purchase_quantity = min(purch_quant, barrel_quantity)
             if quantity < 10 * purch_quant and gold >= price:
                 used_colors.add(color)
                 money_spent += price * purchase_quantity
                 purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": purchase_quantity})
                 gold -= price * purchase_quantity
 
-            if len(used_colors) == len(colors_sorted):
+            if len(used_colors) >= len(colors_sorted):
                 if gold > money_spent:
                     money_spent = 0
                     used_colors = set()
