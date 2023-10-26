@@ -84,7 +84,7 @@ def get_desired_size_for_color(gold, ml_color):
     purch_quant = 1
 
     if gold > 1500:
-        purch_quant = gold // 2550
+        purch_quant = min(gold // 2550, (200 - ml_color) // 25)
         if ml_color < 10:
             desired_size.extend(["LARGE", "MEDIUM", "SMALL", "MINI"])
         elif ml_color < 20:
