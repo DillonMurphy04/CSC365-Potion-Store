@@ -202,21 +202,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     threshold = math.ceil((ml_red + ml_green + ml_blue + ml_dark) / 2) + 1
 
     colors_sorted = []
+    current_colors = set()
     if ml_red < 200 and "RED" in offered_colors:
         if ml_red <= threshold:
             colors_sorted.append((num_red_potions, "RED"))
+            current_colors.add("RED")
 
     if ml_green < 200 and "GREEN" in offered_colors:
         if ml_green <= threshold:
             colors_sorted.append((num_green_potions, "GREEN"))
+            current_colors.add("GREEN")
 
-    if ml_blue < 100 and "BLUE" in offered_colors:
+    if ml_blue < 200 and "BLUE" in offered_colors:
         if ml_blue <= threshold:
             colors_sorted.append((num_blue_potions, "BLUE"))
+            current_colors.add("BLUE")
 
     if ml_dark < 200 and "DARK" in offered_colors:
         if ml_dark <= threshold:
             colors_sorted.append((num_dark_potions, "DARK"))
+            current_colors.add("DARK")
 
     color_weights = {"DARK": 4, "RED": 3, "GREEN": 2, "BLUE": 1}
     colors_sorted.sort(key=lambda x: (x[0], -color_weights[x[1]]))
@@ -244,7 +249,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
         for color, quantity, purch_quant, remaining_sizes in desired_sizes_dict[size]:
             if remaining_sizes == 1:
-                colors_sorted = [item for item in colors_sorted if item[1] != color]
+                current_colors.discard(color)
             if color in used_colors:
                 continue
             if size not in potion_info or color not in potion_info[size]:
@@ -261,7 +266,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": purchase_quantity})
                 gold -= price * purchase_quantity
 
-            if len(used_colors) >= len(colors_sorted):
+            if len(used_colors) >= len(current_colors):
                 if gold > money_spent:
                     money_spent = 0
                     used_colors = set()
