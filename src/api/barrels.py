@@ -223,7 +223,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             colors_sorted.append((num_dark_potions, "DARK"))
             current_colors.add("DARK")
 
-    color_weights = {"DARK": 4, "RED": 3, "GREEN": 2, "BLUE": 1}
+    color_weights = {"DARK": 4, "GREEN": 3, "RED": 2, "BLUE": 1}
     colors_sorted.sort(key=lambda x: (x[0], -color_weights[x[1]]))
     # colors_sorted.sort()
 
