@@ -263,7 +263,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if quantity < 10 * purch_quant and gold >= price:
                 used_colors.add(color)
                 money_spent += price * purchase_quantity
-                purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": purchase_quantity})
+                purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": int(purchase_quantity)})
                 gold -= price * purchase_quantity
 
             if len(used_colors) >= len(current_colors):
