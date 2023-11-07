@@ -59,6 +59,7 @@ def get_inventory():
 
     gold = customer_potions.gold + inventory.gold
     potions = customer_potions.total_potions + bottled_potions.total_potions
+
     return {"number_of_potions": potions, 
             "ml_in_barrels": inventory.num_red_ml + inventory.num_green_ml + inventory.num_blue_ml + inventory.num_dark_ml, 
             "gold": gold}
