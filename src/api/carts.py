@@ -198,6 +198,15 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     print(f"{cart_id}: {cart_checkout}")
 
     with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                """
+                DELETE FROM cart_items
+                WHERE time <= (NOW() at time zone 'utc' - INTERVAL '1 hour')
+                """
+            )
+        )
+
         transaction_id = connection.execute(
             sqlalchemy.text(
                 """
