@@ -95,7 +95,7 @@ def get_desired_size_for_color(gold, ml_color):
             purch_quant = max(1, min(gold // 2550, (200 - ml_color) // 25))
         else:
             desired_size.extend(["LARGE"])
-            purch_quant = max(1, min(5, gold // 2550))
+            purch_quant = max(1, min(4, gold // 2550))
     elif gold > 800:
         if ml_color < 10:
             desired_size.extend(["MEDIUM", "SMALL", "MINI"])
@@ -215,10 +215,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             colors_sorted.append((num_green_potions, "GREEN"))
             current_colors.add("GREEN")
 
-    if ml_blue < 200 and "BLUE" in offered_colors:
-        if ml_blue <= threshold:
-            colors_sorted.append((num_blue_potions, "BLUE"))
-            current_colors.add("BLUE")
+    # if ml_blue < 200 and "BLUE" in offered_colors:
+    #     if ml_blue <= threshold:
+    #         colors_sorted.append((num_blue_potions, "BLUE"))
+    #         current_colors.add("BLUE")
 
     if ml_dark < 200 and "DARK" in offered_colors:
         if ml_dark <= threshold:
