@@ -50,34 +50,31 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
             dark_ml += barrel.ml_per_barrel * barrel.quantity
             dark_price += barrel.price * barrel.quantity
 
-    price = red_price+green_price+blue_price+dark_price
+    with db.engine.begin() as connection:
+        transaction_id = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO transactions (description, type)
+                VALUES (:description, :type)
+                RETURNING id
+                """
+            ).params(description=f"Buying Red: {red_ml} ml, Green: {green_ml} ml, Blue: {blue_ml} ml, Dark: {dark_ml} ml", type="Barreler")
+        ).first().id
 
-    if price > 0:
-        with db.engine.begin() as connection:
-            transaction_id = connection.execute(
-                sqlalchemy.text(
-                    """
-                    INSERT INTO transactions (description, type)
-                    VALUES (:description, :type)
-                    RETURNING id
-                    """
-                ).params(description=f"Buying Red: {red_ml} ml, Green: {green_ml} ml, Blue: {blue_ml} ml, Dark: {dark_ml} ml", type="Barreler")
-            ).first().id
-
-            connection.execute(
-                sqlalchemy.text(
-                    """
-                    INSERT INTO inventory_ledger_entries (transaction_id, change_gold, change_red, change_green, change_blue, change_dark)
-                    VALUES (:transaction_id, -:total_cost, :red_ml, :green_ml, :blue_ml, :dark_ml)
-                    """
-                )
-                .params(transaction_id=transaction_id,
-                        total_cost=price,
-                        red_ml=red_ml,
-                        green_ml=green_ml,
-                        blue_ml=blue_ml,
-                        dark_ml=dark_ml)
+        connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO inventory_ledger_entries (transaction_id, change_gold, change_red, change_green, change_blue, change_dark)
+                VALUES (:transaction_id, -:total_cost, :red_ml, :green_ml, :blue_ml, :dark_ml)
+                """
             )
+            .params(transaction_id=transaction_id,
+                    total_cost=red_price+green_price+blue_price+dark_price,
+                    red_ml=red_ml,
+                    green_ml=green_ml,
+                    blue_ml=blue_ml,
+                    dark_ml=dark_ml)
+        )
 
     return "OK"
 
