@@ -198,15 +198,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     print(f"{cart_id}: {cart_checkout}")
 
     with db.engine.begin() as connection:
-        connection.execute(
-            sqlalchemy.text(
-                """
-                DELETE FROM cart_items
-                WHERE time <= (NOW() at time zone 'utc' - INTERVAL '1 hour')
-                """
-            )
-        )
-
         transaction_id = connection.execute(
             sqlalchemy.text(
                 """
@@ -226,7 +217,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                         item_sku,
                         quantity
                     FROM cart_items
-                    WHERE cart_items.id = :cart_id
+                    WHERE cart_items.id = :cart_id AND cart_items.time > (NOW() at time zone 'utc' - INTERVAL '1 hour')
                 ),
                 ledger_insert AS (
                     INSERT INTO customer_ledger_entries (customer_id, transaction_id, item_sku, change_potions, change_gold)
