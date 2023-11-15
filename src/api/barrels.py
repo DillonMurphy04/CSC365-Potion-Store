@@ -260,7 +260,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 continue
 
             price, barrel_quantity = potion_info[size][color]
-            purchase_quantity = min(purch_quant, barrel_quantity)
+            purchase_quantity = min(purch_quant, barrel_quantity, 2)
 
             if gold < 60:
                 return purchase_plan
