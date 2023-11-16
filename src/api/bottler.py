@@ -159,8 +159,8 @@ def get_bottle_plan():
         if red + green + blue + dark < 100:
             return bottle_plan
 
-        if row.total_potions > math.ceil((sum_potions + 1) / 5):
-            continue
+        # if row.total_potions > math.ceil((sum_potions + 1) / 5):
+        #     continue
 
         possible = min(
             float('inf') if row.red_amount == 0 else red // row.red_amount,
