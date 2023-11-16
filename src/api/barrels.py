@@ -212,15 +212,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             colors_sorted.append((num_red_potions, "RED"))
             current_colors.add("RED")
 
-    # if ml_green < 200 and "GREEN" in offered_colors:
-    #     if ml_green <= threshold:
-    #         colors_sorted.append((num_green_potions, "GREEN"))
-    #         current_colors.add("GREEN")
+    if ml_green < 200 and "GREEN" in offered_colors:
+        if ml_green <= threshold:
+            colors_sorted.append((num_green_potions, "GREEN"))
+            current_colors.add("GREEN")
 
-    # if ml_blue < 200 and "BLUE" in offered_colors:
-    #     if ml_blue <= threshold:
-    #         colors_sorted.append((num_blue_potions, "BLUE"))
-    #         current_colors.add("BLUE")
+    if ml_blue < 200 and "BLUE" in offered_colors:
+        if ml_blue <= threshold:
+            colors_sorted.append((num_blue_potions, "BLUE"))
+            current_colors.add("BLUE")
 
     # if ml_dark < 200 and "DARK" in offered_colors:
     #     if ml_dark <= threshold:
@@ -260,7 +260,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 continue
 
             price, barrel_quantity = potion_info[size][color]
-            purchase_quantity = min(purch_quant, barrel_quantity, 2)
+            purchase_quantity = min(purch_quant, barrel_quantity, 3)
 
             if gold < 60:
                 return purchase_plan
