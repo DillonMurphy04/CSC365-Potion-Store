@@ -119,162 +119,162 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     print(wholesale_catalog)
 
-    # return []
+    return []
 
-    with db.engine.begin() as connection:
-        inventory = connection.execute(
-            sqlalchemy.text(
-                """
-                WITH combined_ledgers AS (
-                    SELECT change_gold, change_red, change_green, change_blue, change_dark
-                    FROM inventory_ledger_entries
-                    UNION ALL
-                    SELECT 0 AS change_gold, change_red, change_green, change_blue, change_dark
-                    FROM potion_ledger_entries
-                )
-                SELECT
-                    COALESCE(SUM(change_gold), 0) AS gold,
-                    COALESCE(SUM(change_red), 0) AS num_red_ml,
-                    COALESCE(SUM(change_green), 0) AS num_green_ml,
-                    COALESCE(SUM(change_blue), 0) AS num_blue_ml,
-                    COALESCE(SUM(change_dark), 0) AS num_dark_ml
-                FROM combined_ledgers
-                """
-            )
-        ).first()
+    # with db.engine.begin() as connection:
+    #     inventory = connection.execute(
+    #         sqlalchemy.text(
+    #             """
+    #             WITH combined_ledgers AS (
+    #                 SELECT change_gold, change_red, change_green, change_blue, change_dark
+    #                 FROM inventory_ledger_entries
+    #                 UNION ALL
+    #                 SELECT 0 AS change_gold, change_red, change_green, change_blue, change_dark
+    #                 FROM potion_ledger_entries
+    #             )
+    #             SELECT
+    #                 COALESCE(SUM(change_gold), 0) AS gold,
+    #                 COALESCE(SUM(change_red), 0) AS num_red_ml,
+    #                 COALESCE(SUM(change_green), 0) AS num_green_ml,
+    #                 COALESCE(SUM(change_blue), 0) AS num_blue_ml,
+    #                 COALESCE(SUM(change_dark), 0) AS num_dark_ml
+    #             FROM combined_ledgers
+    #             """
+    #         )
+    #     ).first()
 
-        customer_ml = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT
-                    COALESCE(SUM(potions.red_amount * customer_ledger_entries.change_potions), 0) AS total_red,
-                    COALESCE(SUM(potions.green_amount * customer_ledger_entries.change_potions), 0) AS total_green,
-                    COALESCE(SUM(potions.blue_amount * customer_ledger_entries.change_potions), 0) AS total_blue,
-                    COALESCE(SUM(potions.dark_amount * customer_ledger_entries.change_potions), 0) AS total_dark,
-                    COALESCE(SUM(change_gold), 0) AS gold
-                FROM customer_ledger_entries
-                JOIN potions ON customer_ledger_entries.item_sku = potions.item_sku
-                """
-            )
-        ).first()
+    #     customer_ml = connection.execute(
+    #         sqlalchemy.text(
+    #             """
+    #             SELECT
+    #                 COALESCE(SUM(potions.red_amount * customer_ledger_entries.change_potions), 0) AS total_red,
+    #                 COALESCE(SUM(potions.green_amount * customer_ledger_entries.change_potions), 0) AS total_green,
+    #                 COALESCE(SUM(potions.blue_amount * customer_ledger_entries.change_potions), 0) AS total_blue,
+    #                 COALESCE(SUM(potions.dark_amount * customer_ledger_entries.change_potions), 0) AS total_dark,
+    #                 COALESCE(SUM(change_gold), 0) AS gold
+    #             FROM customer_ledger_entries
+    #             JOIN potions ON customer_ledger_entries.item_sku = potions.item_sku
+    #             """
+    #         )
+    #     ).first()
 
-        bottled_ml = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT
-                    COALESCE(SUM(potions.red_amount * potion_ledger_entries.change_potions), 0) AS total_red,
-                    COALESCE(SUM(potions.green_amount * potion_ledger_entries.change_potions), 0) AS total_green,
-                    COALESCE(SUM(potions.blue_amount * potion_ledger_entries.change_potions), 0) AS total_blue,
-                    COALESCE(SUM(potions.dark_amount * potion_ledger_entries.change_potions), 0) AS total_dark
-                FROM public.potion_ledger_entries
-                JOIN potions ON potion_ledger_entries.item_sku = potions.item_sku
-                """
-            )
-        ).first()
+    #     bottled_ml = connection.execute(
+    #         sqlalchemy.text(
+    #             """
+    #             SELECT
+    #                 COALESCE(SUM(potions.red_amount * potion_ledger_entries.change_potions), 0) AS total_red,
+    #                 COALESCE(SUM(potions.green_amount * potion_ledger_entries.change_potions), 0) AS total_green,
+    #                 COALESCE(SUM(potions.blue_amount * potion_ledger_entries.change_potions), 0) AS total_blue,
+    #                 COALESCE(SUM(potions.dark_amount * potion_ledger_entries.change_potions), 0) AS total_dark
+    #             FROM public.potion_ledger_entries
+    #             JOIN potions ON potion_ledger_entries.item_sku = potions.item_sku
+    #             """
+    #         )
+    #     ).first()
 
-    bottled_red_ml = customer_ml.total_red + bottled_ml.total_red
-    bottled_green_ml = customer_ml.total_green + bottled_ml.total_green
-    bottled_blue_ml = customer_ml.total_blue + bottled_ml.total_blue
-    bottled_dark_ml = customer_ml.total_dark + bottled_ml.total_dark
+    # bottled_red_ml = customer_ml.total_red + bottled_ml.total_red
+    # bottled_green_ml = customer_ml.total_green + bottled_ml.total_green
+    # bottled_blue_ml = customer_ml.total_blue + bottled_ml.total_blue
+    # bottled_dark_ml = customer_ml.total_dark + bottled_ml.total_dark
 
-    purchase_plan = []
-    gold = inventory.gold + customer_ml.gold
+    # purchase_plan = []
+    # gold = inventory.gold + customer_ml.gold
 
-    if gold < 60:
-        return purchase_plan
+    # if gold < 60:
+    #     return purchase_plan
 
-    potion_info = defaultdict(dict)
+    # potion_info = defaultdict(dict)
 
-    offered_colors = set()
-    for barrel in wholesale_catalog:
-        parts = barrel.sku.split('_')
-        color = parts[1]
-        size = parts[0]
-        potion_info[size][color] = (barrel.price, barrel.quantity)
-        offered_colors.add(color)
+    # offered_colors = set()
+    # for barrel in wholesale_catalog:
+    #     parts = barrel.sku.split('_')
+    #     color = parts[1]
+    #     size = parts[0]
+    #     potion_info[size][color] = (barrel.price, barrel.quantity)
+    #     offered_colors.add(color)
 
-    colors_sorted = []
+    # colors_sorted = []
 
-    num_red_potions = bottled_red_ml / 100
-    num_green_potions = bottled_green_ml / 100
-    num_blue_potions = bottled_blue_ml / 100
-    num_dark_potions = bottled_dark_ml / 100
-    ml_red = inventory.num_red_ml / 100
-    ml_green = inventory.num_green_ml / 100
-    ml_blue = inventory.num_blue_ml / 100
-    ml_dark = inventory.num_dark_ml / 100
-    threshold = math.ceil((ml_red + ml_green + ml_blue + ml_dark) / 2) + 1
+    # num_red_potions = bottled_red_ml / 100
+    # num_green_potions = bottled_green_ml / 100
+    # num_blue_potions = bottled_blue_ml / 100
+    # num_dark_potions = bottled_dark_ml / 100
+    # ml_red = inventory.num_red_ml / 100
+    # ml_green = inventory.num_green_ml / 100
+    # ml_blue = inventory.num_blue_ml / 100
+    # ml_dark = inventory.num_dark_ml / 100
+    # threshold = math.ceil((ml_red + ml_green + ml_blue + ml_dark) / 2) + 1
 
-    colors_sorted = []
-    current_colors = set()
-    if ml_red < 10 and "RED" in offered_colors:
-        if ml_red <= threshold:
-            colors_sorted.append((num_red_potions, "RED"))
-            current_colors.add("RED")
+    # colors_sorted = []
+    # current_colors = set()
+    # if ml_red < 10 and "RED" in offered_colors:
+    #     if ml_red <= threshold:
+    #         colors_sorted.append((num_red_potions, "RED"))
+    #         current_colors.add("RED")
 
-    if ml_green < 10 and "GREEN" in offered_colors:
-        if ml_green <= threshold:
-            colors_sorted.append((num_green_potions, "GREEN"))
-            current_colors.add("GREEN")
+    # if ml_green < 10 and "GREEN" in offered_colors:
+    #     if ml_green <= threshold:
+    #         colors_sorted.append((num_green_potions, "GREEN"))
+    #         current_colors.add("GREEN")
 
-    if ml_blue < 10 and "BLUE" in offered_colors:
-        if ml_blue <= threshold:
-            colors_sorted.append((num_blue_potions, "BLUE"))
-            current_colors.add("BLUE")
+    # if ml_blue < 10 and "BLUE" in offered_colors:
+    #     if ml_blue <= threshold:
+    #         colors_sorted.append((num_blue_potions, "BLUE"))
+    #         current_colors.add("BLUE")
 
-    # if ml_dark < 200 and "DARK" in offered_colors:
-    #     if ml_dark <= threshold:
-    #         colors_sorted.append((num_dark_potions, "DARK"))
-    #         current_colors.add("DARK")
+    # # if ml_dark < 200 and "DARK" in offered_colors:
+    # #     if ml_dark <= threshold:
+    # #         colors_sorted.append((num_dark_potions, "DARK"))
+    # #         current_colors.add("DARK")
 
-    color_weights = {"DARK": 4, "RED": 3, "GREEN": 2, "BLUE": 1}
-    colors_sorted.sort(key=lambda x: (x[0], -color_weights[x[1]]))
-    # colors_sorted.sort()
+    # color_weights = {"DARK": 4, "RED": 3, "GREEN": 2, "BLUE": 1}
+    # colors_sorted.sort(key=lambda x: (x[0], -color_weights[x[1]]))
+    # # colors_sorted.sort()
 
-    used_colors = set()
+    # used_colors = set()
 
-    money_spent = 0
+    # money_spent = 0
 
-    desired_sizes_dict = {}
+    # desired_sizes_dict = {}
 
-    for quantity, color in colors_sorted:
-        desired_sizes_for_color, purch_quant = get_desired_size_for_color(gold, eval(f"ml_{color.lower()}"))
-        num_available_sizes = len(desired_sizes_for_color)
-        for index, size in enumerate(desired_sizes_for_color):
-            if size not in desired_sizes_dict:
-                desired_sizes_dict[size] = []
-            desired_sizes_dict[size].append((color, quantity, purch_quant, num_available_sizes - index))
+    # for quantity, color in colors_sorted:
+    #     desired_sizes_for_color, purch_quant = get_desired_size_for_color(gold, eval(f"ml_{color.lower()}"))
+    #     num_available_sizes = len(desired_sizes_for_color)
+    #     for index, size in enumerate(desired_sizes_for_color):
+    #         if size not in desired_sizes_dict:
+    #             desired_sizes_dict[size] = []
+    #         desired_sizes_dict[size].append((color, quantity, purch_quant, num_available_sizes - index))
 
-    sizes_order = ["LARGE", "MEDIUM", "SMALL"]
+    # sizes_order = ["LARGE", "MEDIUM", "SMALL"]
 
-    for size in sizes_order:
-        if size not in desired_sizes_dict:
-            continue
+    # for size in sizes_order:
+    #     if size not in desired_sizes_dict:
+    #         continue
 
-        for color, quantity, purch_quant, remaining_sizes in desired_sizes_dict[size]:
-            if remaining_sizes == 1:
-                current_colors.discard(color)
-            if color in used_colors:
-                continue
-            if size not in potion_info or color not in potion_info[size]:
-                continue
+    #     for color, quantity, purch_quant, remaining_sizes in desired_sizes_dict[size]:
+    #         if remaining_sizes == 1:
+    #             current_colors.discard(color)
+    #         if color in used_colors:
+    #             continue
+    #         if size not in potion_info or color not in potion_info[size]:
+    #             continue
 
-            price, barrel_quantity = potion_info[size][color]
-            purchase_quantity = min(purch_quant, barrel_quantity, 5)
+    #         price, barrel_quantity = potion_info[size][color]
+    #         purchase_quantity = min(purch_quant, barrel_quantity, 5)
 
-            if gold < 60:
-                return purchase_plan
-            if gold >= price:
-                used_colors.add(color)
-                money_spent += price * purchase_quantity
-                purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": int(purchase_quantity)})
-                gold -= price * purchase_quantity
+    #         if gold < 60:
+    #             return purchase_plan
+    #         if gold >= price:
+    #             used_colors.add(color)
+    #             money_spent += price * purchase_quantity
+    #             purchase_plan.append({"sku": f"{size}_{color}_BARREL", "quantity": int(purchase_quantity)})
+    #             gold -= price * purchase_quantity
 
-            if len(used_colors) >= len(current_colors):
-                if gold > money_spent:
-                    money_spent = 0
-                    used_colors = set()
-                else:
-                    return purchase_plan
+    #         if len(used_colors) >= len(current_colors):
+    #             if gold > money_spent:
+    #                 money_spent = 0
+    #                 used_colors = set()
+    #             else:
+    #                 return purchase_plan
 
-    return purchase_plan
+    # return purchase_plan
